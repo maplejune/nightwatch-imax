@@ -3,7 +3,18 @@
 
 import requests
 from bs4 import BeautifulSoup
-import datetime
+import datetime, re
+
+class Schedule:
+	def __init__(self, data):
+		data = re.findall("'(.*?)'", data)
+		self.code = data[5]
+		self.movieTitle = data[0]
+		self.movieIdx = data[6]
+		self.playYMD = data[7]
+		self.playTime = data[2]
+		self.remainingSeat = data[3]
+		self.maxSeat = data[4]
 
 def getTimelist(theaterCd, playYMD):
 	data = {'theaterCd':theaterCd, 'playYMD':playYMD}
@@ -16,11 +27,13 @@ def getDateRange():
 	return [(base + datetime.timedelta(days=x)).strftime('%Y%m%d') for x in range(0,25)]
 
 def isImaxMovieTimelist(timelist):
-	return str(timelist).find('아이맥스') != -1
+	r = re.search("'(.*?)'", str(timelist))
+	return True if bool(r) and r.group().upper().find('IMAX') != -1 else False 
 
 for theaterCd in ['0074', '0013', '0014']:
 	for playYMD in getDateRange():
 		for timelist in getTimelist(theaterCd, playYMD):
 			if isImaxMovieTimelist(timelist):
-				print timelist
-
+				schedules = [Schedule(rawData['href']) for rawData in timelist.find_all('a')]
+				for schedule in schedules:
+					print theaterCd, schedule.movieTitle, schedule.playYMD, schedule.playTime
