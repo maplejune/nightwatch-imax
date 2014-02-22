@@ -3,15 +3,24 @@
 
 import requests
 from bs4 import BeautifulSoup
+import datetime
 
-data = {'theaterCd':'0074', 'playYMD':'20140224'}
-response = requests.post('http://m.cgv.co.kr/Schedule/cont/ajaxMovieSchedule.aspx', data)
-soup = BeautifulSoup(response.text)
-timelists = soup.find_all("ul", "timelist")
+def getTimelist(theaterCd, playYMD):
+	data = {'theaterCd':theaterCd, 'playYMD':playYMD}
+	response = requests.post('http://m.cgv.co.kr/Schedule/cont/ajaxMovieSchedule.aspx', data)
+	soup = BeautifulSoup(response.text)
+	return soup.find_all("ul", "timelist")
+
+def getDateRange():
+	base = datetime.datetime.today()
+	return [(base + datetime.timedelta(days=x)).strftime('%Y%m%d') for x in range(0,25)]
 
 def isImaxMovieTimelist(timelist):
 	return str(timelist).find('아이맥스') != -1
 
-for timelist in timelists:
-	if isImaxMovieTimelist(timelist):
-		print timelist
+for theaterCd in ['0074', '0013', '0014']:
+	for playYMD in getDateRange():
+		for timelist in getTimelist(theaterCd, playYMD):
+			if isImaxMovieTimelist(timelist):
+				print timelist
+
