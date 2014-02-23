@@ -3,7 +3,8 @@
 
 import requests
 from bs4 import BeautifulSoup
-import sqlite3, datetime, re
+import logging, sqlite3, datetime, re
+from logging import handlers
 import pigeon
 
 SELECT_QUERY = 'SELECT play_time FROM wildfire WHERE theater_code=? AND movie_code=? AND schedule_code=? AND play_ymd=?'	
@@ -90,10 +91,23 @@ def watchBegins():
 						newPlaytime = wildfire.getNewPlaytime()
 						if len(newPlaytime) > 0:
 							pigeon.send(wildfire, newPlaytime)
-					wildfire.updatePlaytime()			
+					wildfire.updatePlaytime()
+					logger.debug('Wildfire : %s %s %s %s %s %s' % wildfire.getInsertParams())
 
 if __name__ == "__main__":
+	logger = logging.getLogger('nightwatch-imax')
+	logger.setLevel(logging.DEBUG)
+	handler = handlers.RotatingFileHandler('/data/script/nightwatch-imax/logs/nightwatch-imax.log', maxBytes=5*1024*1024, backupCount=5)
+	logger.addHandler(handler)
+	formatter = logging.Formatter('%(asctime)s %(message)s', '%Y-%m-%d %H:%M')
+	handler.setFormatter(formatter)
+
 	con = sqlite3.connect('tyrion.db')
 	cur = con.cursor()
-	watchBegins()
+
+	try:
+		watchBegins()
+	except Exception, e:
+		logger.error(e)	
+
 	con.close()
