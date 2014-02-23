@@ -102,7 +102,7 @@ if __name__ == "__main__":
 	formatter = logging.Formatter('%(asctime)s %(message)s', '%Y-%m-%d %H:%M')
 	handler.setFormatter(formatter)
 
-	con = sqlite3.connect('tyrion.db')
+	con = sqlite3.connect('/data/script/nightwatch-imax/tyrion.db')
 	cur = con.cursor()
 
 	try:
