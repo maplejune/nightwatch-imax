@@ -80,7 +80,7 @@ def getPigeon(theaterCd):
 	return pigeon.Pigeon(cur.fetchone())
 
 def watchBegins():
-	for theaterCd in ['0128']:
+	for theaterCd in ['0074', '0013', '0014']:
 		pigeon = getPigeon(theaterCd)
 		for playYMD in getDateRange():
 			for timelist in getTimelist(theaterCd, playYMD):
