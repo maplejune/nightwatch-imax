@@ -3,7 +3,14 @@
 
 import requests
 from bs4 import BeautifulSoup
-import datetime, re
+import sqlite3, datetime, re
+
+con = sqlite3.connect('tyrion.db')
+cur = con.cursor()
+
+SELECT_QUERY = 'SELECT play_time FROM wildfire WHERE theater_code=? AND movie_code=? AND schedule_code=? AND play_ymd=?'	
+INSERT_QUERY = 'INSERT INTO wildfire (theater_code, movie_code, schedule_code, play_ymd, movie_title, play_time) VALUES (?, ?, ?, ?, ?, ?)'
+UPDATE_QUERY = 'UPDATE wildfire SET play_time=? WHERE theater_code=? AND movie_code=? AND schedule_code=? AND play_ymd=?' 
 
 class Schedule:
 	def __init__(self, data):
@@ -17,10 +24,11 @@ class Schedule:
 		self.maxSeat = data[4]
 
 class Wildfire:
-	def __init__(self, schedules):
+	def __init__(self, theaterCd, schedules):
 		if len(schedules) > 0:
 			self.isReady = True
 			schedule = schedules[0]
+			self.theaterCd = theaterCd
 			self.movieCd = schedule.movieCd
 			self.movieTitle = schedule.movieTitle
 			self.scheduleCd = schedule.scheduleCd
@@ -28,6 +36,15 @@ class Wildfire:
 			self.playTime = ','.join([s.playTime for s in schedules])
 		else:
 			self.isReady = False
+
+	def getSelectParams(self):
+		return (self.theaterCd, self.movieCd, self.scheduleCd, self.playYMD,) 
+	
+	def getInsertParams(self):
+		return (self.theaterCd, self.movieCd, self.scheduleCd, self.playYMD, self.movieTitle, self.playTime,) 
+
+	def getUpdateParams(self):	
+		return (self.playTime, self.theaterCd, self.movieCd, self.scheduleCd, self.playYMD,) 
 
 def getTimelist(theaterCd, playYMD):
 	data = {'theaterCd':theaterCd, 'playYMD':playYMD}
@@ -43,14 +60,40 @@ def isImaxMovieTimelist(timelist):
 	r = re.search("'(.*?)'", str(timelist))
 	return True if bool(r) and r.group().upper().find('IMAX') != -1 else False 
 
-def getScheduleInfo(schedules):
-	if schedules.length > 0:
-		return 
+def getPrevPlaytime(wildfire):
+	cur.execute(SELECT_QUERY, wildfire.getSelectParams())
+	prevWildfire = cur.fetchone()
+
+	if prevWildfire is None:
+		cur.execute(INSERT_QUERY, wildfire.getInsertParams())
+		con.commit()
+		prevPlaytime = wildfire.playTime
+	else:
+		prevPlaytime = prevWildfire[0]
+	
+	return prevPlaytime		
+
+def updatePlaytime(wildfire):
+	cur.execute(UPDATE_QUERY, wildfire.getUpdateParams())
+	con.commit()
+
+def getNewPlaytime(prevPlaytime, currPlaytime):
+	return [playtime for playtime in currPlaytime.split(',') if playtime not in prevPlaytime.split(',')]
+
+STATIC_STR = '%s %s %s %s'
+def writeTweet(wildfire, playtime):
+	print STATIC_STR % (wildfire.movieTitle, wildfire.playYMD[4:6], wildfire.playYMD[6:8], ' '.join([p for p in playtime]))
 
 for theaterCd in ['0074', '0013', '0014']:
 	for playYMD in getDateRange():
 		for timelist in getTimelist(theaterCd, playYMD):
 			if isImaxMovieTimelist(timelist):
-				wildfire = Wildfire([Schedule(rawData['href']) for rawData in timelist.find_all('a')])
-				
-				print theaterCd, wildfire.movieCd, wildfire.scheduleCd, wildfire.playYMD, wildfire.movieTitle, wildfire.playTime 
+				currWildfire = Wildfire(theaterCd, [Schedule(rawData['href']) for rawData in timelist.find_all('a')])
+				if currWildfire.isReady:
+					newPlaytime = getNewPlaytime(getPrevPlaytime(currWildfire), currWildfire.playTime)
+						
+					if len(newPlaytime) > 0:
+						writeTweet(currWildfire, newPlaytime)
+				updatePlaytime(currWildfire)				
+
+con.close()
