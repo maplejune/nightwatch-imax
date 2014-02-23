@@ -8,13 +8,26 @@ import datetime, re
 class Schedule:
 	def __init__(self, data):
 		data = re.findall("'(.*?)'", data)
-		self.code = data[5]
+		self.scheduleCd = data[5]
 		self.movieTitle = data[0]
-		self.movieIdx = data[6]
+		self.movieCd = data[6]
 		self.playYMD = data[7]
 		self.playTime = data[2]
 		self.remainingSeat = data[3]
 		self.maxSeat = data[4]
+
+class Wildfire:
+	def __init__(self, schedules):
+		if len(schedules) > 0:
+			self.isReady = True
+			schedule = schedules[0]
+			self.movieCd = schedule.movieCd
+			self.movieTitle = schedule.movieTitle
+			self.scheduleCd = schedule.scheduleCd
+			self.playYMD = schedule.playYMD
+			self.playTime = ','.join([s.playTime for s in schedules])
+		else:
+			self.isReady = False
 
 def getTimelist(theaterCd, playYMD):
 	data = {'theaterCd':theaterCd, 'playYMD':playYMD}
@@ -30,10 +43,14 @@ def isImaxMovieTimelist(timelist):
 	r = re.search("'(.*?)'", str(timelist))
 	return True if bool(r) and r.group().upper().find('IMAX') != -1 else False 
 
+def getScheduleInfo(schedules):
+	if schedules.length > 0:
+		return 
+
 for theaterCd in ['0074', '0013', '0014']:
 	for playYMD in getDateRange():
 		for timelist in getTimelist(theaterCd, playYMD):
 			if isImaxMovieTimelist(timelist):
-				schedules = [Schedule(rawData['href']) for rawData in timelist.find_all('a')]
-				for schedule in schedules:
-					print theaterCd, schedule.movieTitle, schedule.playYMD, schedule.playTime
+				wildfire = Wildfire([Schedule(rawData['href']) for rawData in timelist.find_all('a')])
+				
+				print theaterCd, wildfire.movieCd, wildfire.scheduleCd, wildfire.playYMD, wildfire.movieTitle, wildfire.playTime 
