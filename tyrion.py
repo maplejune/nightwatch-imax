@@ -83,8 +83,8 @@ def getPigeon(theaterCd):
 def watchBegins():
 	for theaterCd in ['0074', '0013', '0014']:
 		pigeon = getPigeon(theaterCd)
-		time.sleep(1)
 		for playYMD in getDateRange():
+			time.sleep(1)
 			for timelist in getTimelist(theaterCd, playYMD):
 				if isImaxMovieTimelist(timelist):
 					wildfire = Wildfire(theaterCd, [Schedule(rawData['href']) for rawData in timelist.find_all('a')])
@@ -92,8 +92,8 @@ def watchBegins():
 						newPlaytime = wildfire.getNewPlaytime()
 						if len(newPlaytime) > 0:
 							pigeon.send(wildfire, newPlaytime)
-							time.sleep(1)
 							logger.debug('Wildfire : %s %s %s %s %s %s' % wildfire.getInsertParams())
+							time.sleep(1)
 					wildfire.updatePlaytime()
 					logger.debug('Check : %s %s' % (theaterCd, playYMD))
 					
