@@ -24,8 +24,8 @@ class Schedule:
 
 class Wildfire:
 	def __init__(self, theaterCd, schedules):
+		self.isReady = False
 		if len(schedules) > 0:
-			self.isReady = True
 			schedule = schedules[0]
 			self.theaterCd = theaterCd
 			self.movieCd = schedule.movieCd
@@ -33,8 +33,13 @@ class Wildfire:
 			self.scheduleCd = schedule.scheduleCd
 			self.playYMD = schedule.playYMD
 			self.playTime = ','.join([s.playTime for s in schedules])
-		else:
-			self.isReady = False
+		try:
+			if self.theaterCd and self.movieCd and self.scheduleCd and self.playYMD: 
+				self.isReady = True
+			else:
+				logger.debug('Wildfire is not ready')
+		except NameError:
+			logger.error('Wildfire is leaking')
 
 	def getSelectParams(self):
 		return (self.theaterCd, self.movieCd, self.scheduleCd, self.playYMD,) 
@@ -59,6 +64,7 @@ class Wildfire:
 		return [playtime for playtime in self.playTime.split(',') if playtime not in prevPlaytime.split(',')]
 	
 	def updatePlaytime(self):
+		logger.debug('Update')
 		cur.execute(UPDATE_QUERY, self.getUpdateParams())
 		con.commit()
 
@@ -94,7 +100,7 @@ def watchBegins():
 							pigeon.send(wildfire, newPlaytime)
 							logger.debug('Wildfire : %s %s %s %s %s %s' % wildfire.getInsertParams())
 							time.sleep(1)
-					wildfire.updatePlaytime()
+						wildfire.updatePlaytime()
 					logger.debug('Check : %s %s' % (theaterCd, playYMD))
 					
 if __name__ == "__main__":
