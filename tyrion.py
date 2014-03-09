@@ -3,7 +3,7 @@
 
 import requests
 from bs4 import BeautifulSoup
-import logging, sqlite3, datetime, re
+import logging, sqlite3, datetime, re, time
 from logging import handlers
 import pigeon
 
@@ -83,6 +83,7 @@ def getPigeon(theaterCd):
 def watchBegins():
 	for theaterCd in ['0074', '0013', '0014']:
 		pigeon = getPigeon(theaterCd)
+		time.sleep(1)
 		for playYMD in getDateRange():
 			for timelist in getTimelist(theaterCd, playYMD):
 				if isImaxMovieTimelist(timelist):
@@ -91,9 +92,11 @@ def watchBegins():
 						newPlaytime = wildfire.getNewPlaytime()
 						if len(newPlaytime) > 0:
 							pigeon.send(wildfire, newPlaytime)
+							time.sleep(1)
+							logger.debug('Wildfire : %s %s %s %s %s %s' % wildfire.getInsertParams())
 					wildfire.updatePlaytime()
-					logger.debug('Wildfire : %s %s %s %s %s %s' % wildfire.getInsertParams())
-
+					logger.debug('Check : %s %s' % (theaterCd, playYMD))
+					
 if __name__ == "__main__":
 	logger = logging.getLogger('nightwatch-imax')
 	logger.setLevel(logging.DEBUG)
