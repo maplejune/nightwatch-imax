@@ -64,7 +64,6 @@ class Wildfire:
 		return [playtime for playtime in self.playTime.split(',') if playtime not in prevPlaytime.split(',')]
 	
 	def updatePlaytime(self):
-		logger.debug('Update')
 		cur.execute(UPDATE_QUERY, self.getUpdateParams())
 		con.commit()
 
@@ -101,7 +100,7 @@ def watchBegins():
 							logger.debug('Wildfire : %s %s %s %s %s %s' % wildfire.getInsertParams())
 							time.sleep(1)
 						wildfire.updatePlaytime()
-					logger.debug('Check : %s %s' % (theaterCd, playYMD))
+					logger.debug('Checked : %s %s' % (theaterCd, playYMD))
 					
 if __name__ == "__main__":
 	logger = logging.getLogger('nightwatch-imax')
