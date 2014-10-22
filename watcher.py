@@ -3,11 +3,16 @@
 
 from bs4 import BeautifulSoup
 import requests, moment
-import re
+import re, os, logging, logging.handlers
 
 TICKET_FORMAT = re.compile(r"popupSchedule\('(.*)','(.*)','(\d\d:\d\d)','\d*','\d*', '\d*', '(\d*)', '(\d*)',")
 
-for theaterCd in ['0074']:
+LOG_FILE = os.path.join(os.path.dirname(__file__), 'WATCH.log')
+DB_FILE = os.path.join(os.path.dirname(__file__), 'TICKET.db')
+
+def getImaxTicketList(theaterCd):
+    imaxTicketList = []
+    
     for playYMD in [moment.now().add(days=x).strftime('%Y%m%d') for x in range(0, 30)]:
         response = requests.post('http://m.cgv.co.kr/Schedule/cont/ajaxMovieSchedule.aspx', {'theaterCd':theaterCd, 'playYMD':playYMD})
         timeList = BeautifulSoup(response.text).find_all("ul", "timelist")
@@ -27,4 +32,9 @@ for theaterCd in ['0074']:
                         ticketDate = ticketData[4]
                         
                         if movieTitle.find('IMAX') > -1 and ticketType.find('IMAX') > -1:
-                            print movieTitle, ticketType, ticketTime, movieIdx, ticketDate
+                            imaxTicketList.append({'theaterCd':theaterCd, 'movieIdx':movieIdx, 'movieTitle':movieTitle, 'ticketDate': ticketDate, 'ticketTime': ticketTime})
+
+    return imaxTicketList
+
+if __name__ == "__main__":
+    print getImaxTicketList('0074')
