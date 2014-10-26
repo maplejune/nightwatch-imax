@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from bs4 import BeautifulSoup
-import requests, moment
+import requests, moment, sqlite3
 import re, os, logging, logging.handlers
 
 TICKET_FORMAT = re.compile(r"popupSchedule\('(.*)','(.*)','(\d\d:\d\d)','\d*','\d*', '\d*', '(\d*)', '(\d*)',")
@@ -37,4 +37,24 @@ def getImaxTicketList(theaterCd):
     return imaxTicketList
 
 if __name__ == "__main__":
-    print getImaxTicketList('0074')
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    
+    currentTime = moment.now().strftime('%Y%m%d%H%M')
+    imaxTicketList = getImaxTicketList('0074')
+    
+    for imaxTicket in imaxTicketList:
+        cursor.execute('SELECT * FROM ticket WHERE theaterCd=? AND movieIdx=? AND ticketDate=? AND ticketTime=?', (imaxTicket['theaterCd'], imaxTicket['movieIdx'], imaxTicket['ticketDate'], imaxTicket['ticketTime']))
+        savedTicket = cursor.fetchone()
+        
+        if savedTicket is None:
+            cursor.execute('INSERT INTO ticket VALUES (?,?,?,?,?)', (imaxTicket['theaterCd'], imaxTicket['movieIdx'], imaxTicket['ticketDate'], imaxTicket['ticketTime'], currentTime))
+            print imaxTicket
+        else:
+            print savedTicket
+            
+    conn.commit()
+    conn.close()
+        
+
+        
