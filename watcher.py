@@ -49,20 +49,25 @@ if __name__ == "__main__":
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     
-    currentTime = moment.now().strftime('%Y%m%d%H%M')
-    imaxTicketList = getImaxTicketList('0074')
-    
-    for imaxTicket in imaxTicketList:
-        query = (imaxTicket['theaterCd'], imaxTicket['movieIdx'], imaxTicket['ticketDate'], imaxTicket['ticketTime'])
-        cursor.execute('SELECT * FROM ticket WHERE theaterCd=? AND movieIdx=? AND ticketDate=? AND ticketTime=?', query)
-        savedTicket = cursor.fetchone()
-        
-        if savedTicket is None:
-            cursor.execute('INSERT INTO ticket VALUES (?,?,?,?,?,0)', (imaxTicket['theaterCd'], imaxTicket['movieIdx'], imaxTicket['ticketDate'], imaxTicket['ticketTime'], currentTime))
-            logger.debug('New ticket : ' + str(query))
-        else:
-            logger.debug('Already detected : ' + str(query))
-            
+    for theaterCd in ['0074', '0013', '0014']:
+        currentTime = moment.now().strftime('%Y%m%d%H%M')
+        imaxTicketList = getImaxTicketList(theaterCd)
+
+        for imaxTicket in imaxTicketList:
+            query = (imaxTicket['theaterCd'], imaxTicket['movieIdx'], imaxTicket['ticketDate'], imaxTicket['ticketTime'])
+            cursor.execute('SELECT * FROM ticket WHERE theaterCd=? AND movieIdx=? AND ticketDate=? AND ticketTime=?', query)
+            savedTicket = cursor.fetchone()
+
+            if savedTicket is None:
+                cursor.execute('INSERT INTO ticket VALUES (?,?,?,?,?,0)', (imaxTicket['theaterCd'], \
+                                                                           imaxTicket['movieIdx'], \
+                                                                           imaxTicket['ticketDate'], \
+                                                                           imaxTicket['ticketTime'], \
+                                                                           currentTime))
+                logger.debug('New ticket : ' + str(query))
+            else:
+                logger.debug('Already detected : ' + str(query))
+
     conn.commit()
     conn.close()
     
