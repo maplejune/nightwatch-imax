@@ -5,16 +5,7 @@ from twython import Twython
 import requests, moment, sqlite3
 import re, os, logging, logging.handlers
 
-LOG_FILE = os.path.join(os.path.dirname(__file__), 'WATCH.log')
 DB_FILE = os.path.join(os.path.dirname(__file__), 'TICKET.db')
-
-logger = logging.getLogger('NIGHTWATCH-IMAX')
-logger.setLevel(logging.DEBUG)
-
-handler = logging.handlers.RotatingFileHandler(LOG_FILE, maxBytes=10240000, backupCount=5)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
-logger.addHandler(handler)
 
 def getMovieInfo(cursor, movieIdx):
     cursor.execute('SELECT * FROM movie WHERE movieIdx=?', (movieIdx,))
