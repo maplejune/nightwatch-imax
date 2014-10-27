@@ -10,6 +10,14 @@ TICKET_FORMAT = re.compile(r"popupSchedule\('(.*)','(.*)','(\d\d:\d\d)','\d*','\
 LOG_FILE = os.path.join(os.path.dirname(__file__), 'WATCH.log')
 DB_FILE = os.path.join(os.path.dirname(__file__), 'TICKET.db')
 
+logger = logging.getLogger('NIGHTWATCH-IMAX')
+logger.setLevel(logging.DEBUG)
+
+handler = logging.handlers.RotatingFileHandler(LOG_FILE, maxBytes=10240000, backupCount=5)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
 def getImaxTicketList(theaterCd):
     imaxTicketList = []
     
@@ -44,14 +52,15 @@ if __name__ == "__main__":
     imaxTicketList = getImaxTicketList('0074')
     
     for imaxTicket in imaxTicketList:
-        cursor.execute('SELECT * FROM ticket WHERE theaterCd=? AND movieIdx=? AND ticketDate=? AND ticketTime=?', (imaxTicket['theaterCd'], imaxTicket['movieIdx'], imaxTicket['ticketDate'], imaxTicket['ticketTime']))
+        query = (imaxTicket['theaterCd'], imaxTicket['movieIdx'], imaxTicket['ticketDate'], imaxTicket['ticketTime'])
+        cursor.execute('SELECT * FROM ticket WHERE theaterCd=? AND movieIdx=? AND ticketDate=? AND ticketTime=?', query)
         savedTicket = cursor.fetchone()
         
         if savedTicket is None:
-            cursor.execute('INSERT INTO ticket VALUES (?,?,?,?,?)', (imaxTicket['theaterCd'], imaxTicket['movieIdx'], imaxTicket['ticketDate'], imaxTicket['ticketTime'], currentTime))
-            print imaxTicket
+            cursor.execute('INSERT INTO ticket VALUES (?,?,?,?,?,0)', (imaxTicket['theaterCd'], imaxTicket['movieIdx'], imaxTicket['ticketDate'], imaxTicket['ticketTime'], currentTime))
+            logger.debug('New ticket : ' + str(query))
         else:
-            print savedTicket
+            logger.debug('Already detected : ' + str(query))
             
     conn.commit()
     conn.close()

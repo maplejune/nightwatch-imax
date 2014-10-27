@@ -18,7 +18,8 @@ if __name__ == "__main__":
        movieIdx        INTEGER     NOT NULL,
        ticketDate      TEXT    NOT NULL,
        ticketTime      TEXT    NOT NULL,
-       insertTime      TEXT    NOT NULL);''')
+       insertTime      TEXT    NOT NULL,
+       isReported       INTEGER    NOT NULL);''')
 
     conn.execute('''CREATE INDEX ticketIndex
         on ticket (theaterCd, movieIdx, ticketDate);''')
