@@ -4,6 +4,7 @@
 from bs4 import BeautifulSoup
 import requests, moment, sqlite3
 import re, os, logging, logging.handlers
+import reporter
 
 TICKET_FORMAT = re.compile(r"popupSchedule\('(.*)','(.*)','(\d\d:\d\d)','\d*','\d*', '\d*', '(\d*)', '(\d*)',")
 
@@ -64,6 +65,8 @@ if __name__ == "__main__":
             
     conn.commit()
     conn.close()
+    
+    reporter.main()
         
 
         

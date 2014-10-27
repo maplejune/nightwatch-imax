@@ -49,10 +49,9 @@ def sendTweet(apiInfo, messageData):
                                                                    int(messageData[1][6:8]), 
                                                                    ' '.join([p for p in messageData[2]]),
                                                                    apiInfo[4])
-    print message
-    #twitter.update_status(status=message)    
+    twitter.update_status(status=message)    
 
-if __name__ == "__main__":
+def main():
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     
@@ -84,7 +83,13 @@ if __name__ == "__main__":
                         ticketTimeList = sorted([ticketTimeRaw[0] for ticketTimeRaw in ticketTimeRawList])
 
                         sendTweet(apiInfo, (movieTitle, ticketDate, ticketTimeList))
-
+                        
+                        for ticketTime in ticketTimeList:
+                            cursor.execute('UPDATE ticket SET isReported=1 WHERE theaterCd=? AND movieIdx=? AND ticketDate=? AND ticketTime=?', \
+                                           (theaterCd, movieIdx, ticketDate, ticketTime))
+                            
     conn.commit()
     conn.close()
-    
+
+if __name__ == "__main__":
+    main()
