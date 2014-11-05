@@ -6,6 +6,7 @@ import requests, moment, sqlite3
 import re, os, logging, logging.handlers
 
 DB_FILE = os.path.join(os.path.dirname(__file__), 'TICKET.db')
+DUMMY_ID = "-1"
 
 def getMovieInfo(cursor, movieIdx):
     cursor.execute('SELECT * FROM movie WHERE movieIdx=?', (movieIdx,))
@@ -40,7 +41,9 @@ def sendTweet(apiInfo, messageData):
                                                                    int(messageData[1][6:8]), 
                                                                    ' '.join([p for p in messageData[2]]),
                                                                    apiInfo[4])
-    twitter.update_status(status=message)    
+    statusInfo = twitter.update_status(status=message)
+
+    return statusInfo['id']
 
 def main():
     conn = sqlite3.connect(DB_FILE)
@@ -51,7 +54,7 @@ def main():
         apiInfo = cursor.fetchone()
     
         if apiInfo is not None:    
-            cursor.execute('SELECT DISTINCT movieIdx FROM ticket WHERE theaterCd=? AND isReported=0', (theaterCd,))
+            cursor.execute('SELECT DISTINCT movieIdx FROM ticket WHERE theaterCd=? AND statusId=?', (theaterCd, DUMMY_ID,))
             movieIdxRawList = cursor.fetchall()
 
             for movieIdxRaw in movieIdxRawList:
@@ -61,23 +64,23 @@ def main():
                 movieTitle = movieInfo['movieTitle']
                 movieReleaseDate = moment.date(movieInfo['movieReleaseDate'])
 
-                cursor.execute('SELECT DISTINCT ticketDate FROM ticket WHERE theaterCd=? AND movieIdx=? AND isReported=0', (theaterCd, movieIdx,))
+                cursor.execute('SELECT DISTINCT ticketDate FROM ticket WHERE theaterCd=? AND movieIdx=? AND statusId=?', (theaterCd, movieIdx, DUMMY_ID,))
                 ticketDateRawList = cursor.fetchall()
 
                 for ticketDateRaw in ticketDateRawList:
                     ticketDate = ticketDateRaw[0]
 
                     if moment.date(ticketDate, 'YYYYMD') >= movieReleaseDate:           
-                        cursor.execute('SELECT DISTINCT ticketTime FROM ticket WHERE theaterCd=? AND movieIdx=? AND ticketDate=? AND isReported=0', \
-                                       (theaterCd, movieIdx,ticketDate,))
+                        cursor.execute('SELECT DISTINCT ticketTime FROM ticket WHERE theaterCd=? AND movieIdx=? AND ticketDate=? AND statusId=?', \
+                                       (theaterCd, movieIdx, ticketDate, DUMMY_ID,))
                         ticketTimeRawList = cursor.fetchall()
                         ticketTimeList = sorted([ticketTimeRaw[0] for ticketTimeRaw in ticketTimeRawList])
 
-                        sendTweet(apiInfo, (movieTitle, ticketDate, ticketTimeList))
+                        statusId = sendTweet(apiInfo, (movieTitle, ticketDate, ticketTimeList))
                         
                         for ticketTime in ticketTimeList:
-                            cursor.execute('UPDATE ticket SET isReported=1 WHERE theaterCd=? AND movieIdx=? AND ticketDate=? AND ticketTime=?', \
-                                           (theaterCd, movieIdx, ticketDate, ticketTime))
+                            cursor.execute('UPDATE ticket SET statusId=? WHERE theaterCd=? AND movieIdx=? AND ticketDate=? AND ticketTime=?', \
+                                           (statusId, theaterCd, movieIdx, ticketDate, ticketTime))
                             
     conn.commit()
     conn.close()

@@ -10,6 +10,7 @@ TICKET_FORMAT = re.compile(r"popupSchedule\('(.*)','(.*)','(\d\d:\d\d)','\d*','\
 
 LOG_FILE = os.path.join(os.path.dirname(__file__), 'WATCH.log')
 DB_FILE = os.path.join(os.path.dirname(__file__), 'TICKET.db')
+DUMMY_ID = "-1"
 
 logger = logging.getLogger('NIGHTWATCH-IMAX')
 logger.setLevel(logging.DEBUG)
@@ -59,11 +60,12 @@ if __name__ == "__main__":
             savedTicket = cursor.fetchone()
 
             if savedTicket is None:
-                cursor.execute('INSERT INTO ticket VALUES (?,?,?,?,?,0)', (imaxTicket['theaterCd'], \
+                cursor.execute('INSERT INTO ticket VALUES (?,?,?,?,?,?)', (imaxTicket['theaterCd'], \
                                                                            imaxTicket['movieIdx'], \
                                                                            imaxTicket['ticketDate'], \
                                                                            imaxTicket['ticketTime'], \
-                                                                           currentTime))
+                                                                           currentTime, \
+                                                                           DUMMY_ID))
                 logger.debug('New ticket : ' + str(query))
             else:
                 logger.debug('Already detected : ' + str(query))
