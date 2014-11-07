@@ -1,6 +1,6 @@
 *.py[cod]
 *.db
-*.log
+*.log*
 *.txt
 
 # C extensions

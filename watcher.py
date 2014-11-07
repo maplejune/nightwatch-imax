@@ -46,6 +46,9 @@ def getImaxTicketList(theaterCd):
 
     return imaxTicketList
 
+def isValidTicket(ticket):
+    return ticket['theaterCd'] and ticket['movieIdx'] and ticket['ticketDate'] and ticket['ticketTime']
+
 if __name__ == "__main__":
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
@@ -56,6 +59,11 @@ if __name__ == "__main__":
 
         for imaxTicket in imaxTicketList:
             query = (imaxTicket['theaterCd'], imaxTicket['movieIdx'], imaxTicket['ticketDate'], imaxTicket['ticketTime'])
+            
+            if not isValidTicket(imaxTicket):
+                logger.debug('Wrong ticket : ' + str(query))
+                continue
+
             cursor.execute('SELECT * FROM ticket WHERE theaterCd=? AND movieIdx=? AND ticketDate=? AND ticketTime=?', query)
             savedTicket = cursor.fetchone()
 
