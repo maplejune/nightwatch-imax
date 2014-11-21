@@ -34,7 +34,7 @@ def getMovieInfo(cursor, movieIdx):
     
     return {'movieTitle': movieTitle, 'movieReleaseDate': movieReleaseDate}
 
-def sendTweet(apiInfo, messageData, movieData):
+def sendTweet(apiInfo, messageData):
     twitter = Twython(apiInfo[0], apiInfo[1], apiInfo[2], apiInfo[3])
     message = u'%s %s월 %s일 예매가 열렸습니다. %s 예매가능! #%s' % \
                 (messageData[0], int(messageData[1][4:6]), int(messageData[1][6:8]), ' '.join([p for p in messageData[2]]), apiInfo[4])
@@ -83,7 +83,7 @@ def main():
                         ticketTimeRawList = cursor.fetchall()
                         ticketTimeList = sorted([ticketTimeRaw[0] for ticketTimeRaw in ticketTimeRawList])
 
-                        statusId = sendTweet(apiInfo, (movieTitle, ticketDate, ticketTimeList), (theaterCd, movieIdx, ticketDate))
+                        statusId = sendTweet(apiInfo, (movieTitle, ticketDate, ticketTimeList))
                         
                         if not statusId:
                             continue
