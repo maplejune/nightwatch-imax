@@ -2,6 +2,7 @@
 *.db
 *.log*
 *.txt
+*.lock
 
 # C extensions
 *.so
