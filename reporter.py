@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from twython import Twython
+from twython import Twython, TwythonError
 import requests, moment, sqlite3
 import re, os, logging, logging.handlers
 
@@ -34,16 +34,23 @@ def getMovieInfo(cursor, movieIdx):
     
     return {'movieTitle': movieTitle, 'movieReleaseDate': movieReleaseDate}
 
-def sendTweet(apiInfo, messageData):
+def sendTweet(apiInfo, messageData, movieData):
     twitter = Twython(apiInfo[0], apiInfo[1], apiInfo[2], apiInfo[3])
-    message = u'%s %s월 %s일 예매가 열렸습니다. %s 예매가능! #%s' % (messageData[0], 
-                                                                   int(messageData[1][4:6]), 
-                                                                   int(messageData[1][6:8]), 
-                                                                   ' '.join([p for p in messageData[2]]),
-                                                                   apiInfo[4])
-    statusInfo = twitter.update_status(status=message)
-
-    return statusInfo['id']
+    message = u'%s %s월 %s일 예매가 열렸습니다. %s 예매가능! #%s' % \
+                (messageData[0], int(messageData[1][4:6]), int(messageData[1][6:8]), ' '.join([p for p in messageData[2]]), apiInfo[4])
+    
+    try:
+        statusInfo = twitter.update_status(status=message)
+        return statusInfo['id']
+    except TwythonError as twitError:
+        if twitError.msg.find('duplicate') > 0:
+            message = u'%s %s월 %s일 예매가 다시 열렸습니다. %s 예매가능! #%s' % \
+                (messageData[0], int(messageData[1][4:6]), int(messageData[1][6:8]), ' '.join([p for p in messageData[2]]), apiInfo[4])
+                
+            statusInfo = twitter.update_status(status=message)
+            return statusInfo['id']
+        else:    
+            return False
 
 def main():
     conn = sqlite3.connect(DB_FILE)
@@ -76,7 +83,10 @@ def main():
                         ticketTimeRawList = cursor.fetchall()
                         ticketTimeList = sorted([ticketTimeRaw[0] for ticketTimeRaw in ticketTimeRawList])
 
-                        statusId = sendTweet(apiInfo, (movieTitle, ticketDate, ticketTimeList))
+                        statusId = sendTweet(apiInfo, (movieTitle, ticketDate, ticketTimeList), (theaterCd, movieIdx, ticketDate))
+                        
+                        if not statusId:
+                            continue
                         
                         for ticketTime in ticketTimeList:
                             cursor.execute('UPDATE ticket SET statusId=? WHERE theaterCd=? AND movieIdx=? AND ticketDate=? AND ticketTime=?', \

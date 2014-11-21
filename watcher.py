@@ -81,7 +81,11 @@ if __name__ == "__main__":
     conn.commit()
     conn.close()
     
-    reporter.main()
+    try:
+        reporter.main()
+    except Exception as error:
+        logger.error(error.msg)
+        
         
 
         
