@@ -31,7 +31,7 @@ def getMovieInfo(cursor, movieIdx):
             cursor.execute('INSERT INTO movie VALUES (?,?,?)', (movieIdx, movieTitle, movieReleaseDate.strftime('%Y-%m-%d')))
     else:
         movieTitle = movieInfo[1]
-        movieReleaseDate = movieInfo[2]
+        movieReleaseDate =  moment.date(movieInfo[2])
     
     return {'movieTitle': movieTitle, 'movieReleaseDate': movieReleaseDate}
 
