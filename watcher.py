@@ -20,7 +20,7 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-def getImaxTicketList(theaterCd):
+def getImaxTicketList(theaterCd, needTuple=False):
     imaxTicketList = []
     
     for playYMD in [moment.now().add(days=x).strftime('%Y%m%d') for x in range(0, 30)]:
@@ -42,7 +42,10 @@ def getImaxTicketList(theaterCd):
                         ticketDate = ticketData[4]
                         
                         if movieTitle.find('IMAX') > -1 and ticketType.find('IMAX') > -1:
-                            imaxTicketList.append({'theaterCd':theaterCd, 'movieIdx':movieIdx, 'movieTitle':movieTitle, 'ticketDate': ticketDate, 'ticketTime': ticketTime})
+                            if needTuple:
+                                imaxTicketList.append((theaterCd, int(movieIdx), unicode(ticketDate), unicode(ticketTime)))
+                            else:
+                                imaxTicketList.append({'theaterCd':theaterCd, 'movieIdx':movieIdx, 'movieTitle':movieTitle, 'ticketDate': ticketDate, 'ticketTime': ticketTime})
 
     return imaxTicketList
 
@@ -84,7 +87,7 @@ if __name__ == "__main__":
     try:
         reporter.main()
     except Exception as error:
-        logger.error(error.msg)
+        logger.error(error)
         
         
 

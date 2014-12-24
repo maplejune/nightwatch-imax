@@ -3,11 +3,12 @@
 
 import sqlite3, moment
 import re, os, logging, logging.handlers
+import watcher
 
 LOG_FILE = os.path.join(os.path.dirname(__file__), 'WATCH.log')
 DB_FILE = os.path.join(os.path.dirname(__file__), 'TICKET.db')
 
-logger = logging.getLogger('NIGHTWATCH-IMAX')
+logger = logging.getLogger('NIGHTWATCH-IMAX-REMOVER')
 logger.setLevel(logging.DEBUG)
 
 handler = logging.handlers.RotatingFileHandler(LOG_FILE, maxBytes=10240000, backupCount=5)
@@ -34,6 +35,27 @@ def main():
             
             logger.debug('Old ticket deleted : ' + str((ticketRaw[0], ticketRaw[1], ticketRaw[2], ticketRaw[3])))
     
+    cursor.execute('SELECT DISTINCT theaterCd FROM ticket')
+    theaterCdRawList = cursor.fetchall()
+
+    for theaterCdxRaw in theaterCdRawList:
+        if len(theaterCdxRaw) == 1:
+            theaterCd = theaterCdxRaw[0]
+
+            cursor.execute('SELECT theaterCd, movieIdx, ticketDate, ticketTime FROM ticket WHERE theaterCd=? AND statusId!=-1', (theaterCd,))
+            ticketLocalList = cursor.fetchall()
+
+            if type(ticketLocalList) is list and len(ticketLocalList) > 0:
+                ticketRemoteList = watcher.getImaxTicketList(theaterCd, True)
+                
+                ticketLocalSet = frozenset(ticketLocalList)
+                ticketRemoteSet = frozenset(ticketRemoteList)
+                
+                fakeTicketSet = ticketLocalSet.difference(ticketRemoteSet)
+                
+                for fakeTicket in fakeTicketSet:
+                    print 'Possible fake ticket : ' + str(fakeTicket)
+
     conn.commit()
     conn.close()
 
