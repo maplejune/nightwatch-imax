@@ -18,11 +18,11 @@ def getMovieInfo(cursor, movieIdx):
     if movieInfo is None:
         response = requests.get('http://m.cgv.co.kr/WebApp/Movie/movieDetail.aspx?MovieIdx=%d'%movieIdx)
 
-        movieTitleRaw = re.search(u'<article class="title">(.+)</article>', response.text)
+        movieTitleRaw = re.search(u'<strong class="tit">(.+)</strong>', response.text)
         if movieTitleRaw:
             movieTitle = movieTitleRaw.groups()[0]
 
-        movieReleaseDateRaw = re.search(u'<article class="txt1">.*(\d{4}-\d{2}-\d{2}) 개봉</article>', response.text)
+        movieReleaseDateRaw = re.search(u'<span class="mi_openday">.*(\d{4}\.\d{2}\.\d{2}) 개봉</span>', response.text)
         if movieReleaseDateRaw:
             movieReleaseDate = movieReleaseDateRaw.groups()[0]
             
@@ -69,7 +69,7 @@ def main():
 
                 movieInfo = getMovieInfo(cursor, movieIdx)
                 movieTitle = movieInfo['movieTitle']
-                movieReleaseDate = moment.date(movieInfo['movieReleaseDate'])
+                movieReleaseDate = moment.date(movieInfo['movieReleaseDate'], '%Y.%m.%d')
 
                 cursor.execute('SELECT DISTINCT ticketDate FROM ticket WHERE theaterCd=? AND movieIdx=? AND statusId=?', (theaterCd, movieIdx, DUMMY_ID,))
                 ticketDateRawList = cursor.fetchall()
