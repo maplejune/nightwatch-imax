@@ -27,7 +27,8 @@ def getMovieInfo(cursor, movieIdx):
             movieReleaseDate = movieReleaseDateRaw.groups()[0]
             
         if movieTitle != '' and movieReleaseDate != '':
-            cursor.execute('INSERT INTO movie VALUES (?,?,?)', (movieIdx, movieTitle, movieReleaseDate))
+            movieReleaseDate = moment.date(movieReleaseDate, '%Y.%m.%d')
+            cursor.execute('INSERT INTO movie VALUES (?,?,?)', (movieIdx, movieTitle, movieReleaseDate.strftime('%Y-%m-%d')))
     else:
         movieTitle = movieInfo[1]
         movieReleaseDate = movieInfo[2]
@@ -69,7 +70,7 @@ def main():
 
                 movieInfo = getMovieInfo(cursor, movieIdx)
                 movieTitle = movieInfo['movieTitle']
-                movieReleaseDate = moment.date(movieInfo['movieReleaseDate'], '%Y.%m.%d')
+                movieReleaseDate = movieInfo['movieReleaseDate']
 
                 cursor.execute('SELECT DISTINCT ticketDate FROM ticket WHERE theaterCd=? AND movieIdx=? AND statusId=?', (theaterCd, movieIdx, DUMMY_ID,))
                 ticketDateRawList = cursor.fetchall()
