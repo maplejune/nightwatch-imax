@@ -33,7 +33,7 @@ def main():
             cursor.execute('DELETE FROM ticket WHERE theaterCd=? AND movieIdx=? AND ticketDate=? AND ticketTime=?', \
                            (ticketRaw[0], ticketRaw[1], ticketRaw[2], ticketRaw[3]))
             
-            logger.debug('Old ticket deleted : ' + str((ticketRaw[0], ticketRaw[1], ticketRaw[2], ticketRaw[3])))
+            logger.debug('Old ticket deleted : ' + str(ticketRaw))
     
     cursor.execute('SELECT DISTINCT theaterCd FROM ticket')
     theaterCdRawList = cursor.fetchall()
@@ -54,7 +54,13 @@ def main():
                 fakeTicketSet = ticketLocalSet.difference(ticketRemoteSet)
                 
                 for fakeTicket in fakeTicketSet:
-                    print 'Possible fake ticket : ' + str(fakeTicket)
+                    cursor.execute('SELECT * FROM ticket WHERE theaterCd=? AND movieIdx=? AND ticketDate=? AND ticketTime=?', (fakeTicket[0], fakeTicket[1], fakeTicket[2], fakeTicket[3]))
+                    ticketRaw = cursor.fetchone()
+                    
+                    cursor.execute('INSERT INTO history VALUES (?,?,?,?,?,?)', (ticketRaw[0], ticketRaw[1], ticketRaw[2], ticketRaw[3], currentTimeStr, ticketRaw[5]))
+                    cursor.execute('DELETE FROM ticket WHERE theaterCd=? AND movieIdx=? AND ticketDate=? AND ticketTime=?', (ticketRaw[0], ticketRaw[1], ticketRaw[2], ticketRaw[3]))
+            
+                    logger.debug('Possible fake ticket : ' + str(ticketRaw))
 
     conn.commit()
     conn.close()
