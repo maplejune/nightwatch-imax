@@ -5,7 +5,7 @@ import sqlite3, moment
 import re, os, logging, logging.handlers
 import watcher
 
-LOG_FILE = os.path.join(os.path.dirname(__file__), 'WATCH.log')
+LOG_FILE = os.path.join(os.path.dirname(__file__), 'DELETE.log')
 DB_FILE = os.path.join(os.path.dirname(__file__), 'TICKET.db')
 
 logger = logging.getLogger('NIGHTWATCH-IMAX-REMOVER')
