@@ -47,9 +47,12 @@ def sendTweet(apiInfo, messageData):
         if twitError.msg.find('duplicate') > 0:
             message = u'%s %s월 %s일 예매가 다시 열렸습니다. %s 예매가능! #%s' % \
                 (messageData[0], int(messageData[1][4:6]), int(messageData[1][6:8]), ' '.join([p for p in messageData[2]]), apiInfo[4])
-                
-            statusInfo = twitter.update_status(status=message)
-            return statusInfo['id']
+            
+            try:    
+                statusInfo = twitter.update_status(status=message)
+                return statusInfo['id']
+            except TwythonError as twitError:
+                return False
         else:    
             return False
 
