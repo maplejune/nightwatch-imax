@@ -1,7 +1,8 @@
 *.py[cod]
 *.db
-*.log
+*.log*
 *.txt
+*.lock
 
 # C extensions
 *.so

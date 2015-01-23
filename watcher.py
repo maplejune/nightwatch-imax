@@ -10,6 +10,7 @@ TICKET_FORMAT = re.compile(r"popupSchedule\('(.*)','(.*)','(\d\d:\d\d)','\d*','\
 
 LOG_FILE = os.path.join(os.path.dirname(__file__), 'WATCH.log')
 DB_FILE = os.path.join(os.path.dirname(__file__), 'TICKET.db')
+DUMMY_ID = "-1"
 
 logger = logging.getLogger('NIGHTWATCH-IMAX')
 logger.setLevel(logging.DEBUG)
@@ -19,7 +20,7 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-def getImaxTicketList(theaterCd):
+def getImaxTicketList(theaterCd, needTuple=False):
     imaxTicketList = []
     
     for playYMD in [moment.now().add(days=x).strftime('%Y%m%d') for x in range(0, 30)]:
@@ -41,9 +42,15 @@ def getImaxTicketList(theaterCd):
                         ticketDate = ticketData[4]
                         
                         if movieTitle.find('IMAX') > -1 and ticketType.find('IMAX') > -1:
-                            imaxTicketList.append({'theaterCd':theaterCd, 'movieIdx':movieIdx, 'movieTitle':movieTitle, 'ticketDate': ticketDate, 'ticketTime': ticketTime})
+                            if needTuple:
+                                imaxTicketList.append((theaterCd, int(movieIdx), unicode(ticketDate), unicode(ticketTime)))
+                            else:
+                                imaxTicketList.append({'theaterCd':theaterCd, 'movieIdx':movieIdx, 'movieTitle':movieTitle, 'ticketDate': ticketDate, 'ticketTime': ticketTime})
 
     return imaxTicketList
+
+def isValidTicket(ticket):
+    return ticket['theaterCd'] and ticket['movieIdx'] and ticket['ticketDate'] and ticket['ticketTime']
 
 if __name__ == "__main__":
     conn = sqlite3.connect(DB_FILE)
@@ -55,15 +62,21 @@ if __name__ == "__main__":
 
         for imaxTicket in imaxTicketList:
             query = (imaxTicket['theaterCd'], imaxTicket['movieIdx'], imaxTicket['ticketDate'], imaxTicket['ticketTime'])
+            
+            if not isValidTicket(imaxTicket):
+                logger.debug('Wrong ticket : ' + str(query))
+                continue
+
             cursor.execute('SELECT * FROM ticket WHERE theaterCd=? AND movieIdx=? AND ticketDate=? AND ticketTime=?', query)
             savedTicket = cursor.fetchone()
 
             if savedTicket is None:
-                cursor.execute('INSERT INTO ticket VALUES (?,?,?,?,?,0)', (imaxTicket['theaterCd'], \
+                cursor.execute('INSERT INTO ticket VALUES (?,?,?,?,?,?)', (imaxTicket['theaterCd'], \
                                                                            imaxTicket['movieIdx'], \
                                                                            imaxTicket['ticketDate'], \
                                                                            imaxTicket['ticketTime'], \
-                                                                           currentTime))
+                                                                           currentTime, \
+                                                                           DUMMY_ID))
                 logger.debug('New ticket : ' + str(query))
             else:
                 logger.debug('Already detected : ' + str(query))
@@ -71,7 +84,11 @@ if __name__ == "__main__":
     conn.commit()
     conn.close()
     
-    reporter.main()
+    try:
+        reporter.main()
+    except Exception as error:
+        logger.error(error)
+        
         
 
         

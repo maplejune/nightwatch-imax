@@ -49,16 +49,45 @@ if __name__ == "__main__":
        ticketDate      TEXT    NOT NULL,
        ticketTime      TEXT    NOT NULL,
        insertTime      TEXT    NOT NULL,
-       isReported       INTEGER    NOT NULL);''')
+       statusId        TEXT    NOT NULL);''')
 
     conn.execute('''CREATE INDEX movieIndex
         on ticket (theaterCd, movieIdx);''')
     
     conn.execute('''CREATE INDEX ticketIndex
         on ticket (theaterCd, movieIdx, ticketDate);''')
+
+    conn.execute('''CREATE INDEX ticketStatusIndex
+        on ticket (theaterCd, movieIdx, ticketDate, statusId);''')
     
     conn.execute('''CREATE INDEX ticketAllIndex
         on ticket (theaterCd, movieIdx, ticketDate, ticketTime);''')
+
+    conn.execute('''CREATE INDEX statusIndex
+        on ticket (statusId);''')
+
+    conn.execute('''CREATE TABLE history
+       (theaterCd       TEXT    NOT NULL,
+       movieIdx        INTEGER     NOT NULL,
+       ticketDate      TEXT    NOT NULL,
+       ticketTime      TEXT    NOT NULL,
+       insertTime      TEXT    NOT NULL,
+       statusId        TEXT    NOT NULL);''')
+
+    conn.execute('''CREATE INDEX historyMovieIndex
+        on history (theaterCd, movieIdx);''')
+    
+    conn.execute('''CREATE INDEX historyIndex
+        on history (theaterCd, movieIdx, ticketDate);''')
+
+    conn.execute('''CREATE INDEX historyStatusIndex
+        on history (theaterCd, movieIdx, ticketDate, statusId);''')
+    
+    conn.execute('''CREATE INDEX historyAllIndex
+        on history (theaterCd, movieIdx, ticketDate, ticketTime);''')
+
+    conn.execute('''CREATE INDEX historyStatusIdIndex
+        on history (statusId);''')
     
     conn.commit()
     conn.close()
