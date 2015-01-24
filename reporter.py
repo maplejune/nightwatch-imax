@@ -3,7 +3,7 @@
 
 from twython import Twython, TwythonError
 import requests, moment, sqlite3
-import re, os, logging, logging.handlers
+import re, os
 
 DB_FILE = os.path.join(os.path.dirname(__file__), 'TICKET.db')
 DUMMY_ID = "-1"
