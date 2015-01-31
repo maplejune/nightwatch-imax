@@ -5,7 +5,7 @@ import sqlite3, moment
 import re, os, logging, logging.handlers
 import watcher
 
-LOG_FILE = os.path.join(os.path.dirname(__file__), 'WATCH.log')
+LOG_FILE = os.path.join(os.path.dirname(__file__), 'DELETE.log')
 DB_FILE = os.path.join(os.path.dirname(__file__), 'TICKET.db')
 
 logger = logging.getLogger('NIGHTWATCH-IMAX-REMOVER')
@@ -57,10 +57,16 @@ def main():
                     cursor.execute('SELECT * FROM ticket WHERE theaterCd=? AND movieIdx=? AND ticketDate=? AND ticketTime=?', (fakeTicket[0], fakeTicket[1], fakeTicket[2], fakeTicket[3]))
                     ticketRaw = cursor.fetchone()
                     
-                    cursor.execute('INSERT INTO history VALUES (?,?,?,?,?,?)', (ticketRaw[0], ticketRaw[1], ticketRaw[2], ticketRaw[3], currentTimeStr, ticketRaw[5]))
-                    cursor.execute('DELETE FROM ticket WHERE theaterCd=? AND movieIdx=? AND ticketDate=? AND ticketTime=?', (ticketRaw[0], ticketRaw[1], ticketRaw[2], ticketRaw[3]))
-            
-                    logger.debug('Possible fake ticket : ' + str(ticketRaw))
+                    currentTime = moment.now()
+                    ticketInsertTime = moment.date(ticketRaw[4], 'YYYYMMDDHHmm')
+                    
+                    timeDiff = currentTime - ticketInsertTime
+                    
+                    if timeDiff.seconds < 3600:
+                        cursor.execute('INSERT INTO history VALUES (?,?,?,?,?,?)', (ticketRaw[0], ticketRaw[1], ticketRaw[2], ticketRaw[3], currentTimeStr, ticketRaw[5]))
+                        cursor.execute('DELETE FROM ticket WHERE theaterCd=? AND movieIdx=? AND ticketDate=? AND ticketTime=?', (ticketRaw[0], ticketRaw[1], ticketRaw[2], ticketRaw[3]))
+                
+                        logger.debug('Possible fake ticket : ' + str(ticketRaw))
 
     conn.commit()
     conn.close()
