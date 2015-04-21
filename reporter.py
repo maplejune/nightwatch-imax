@@ -16,7 +16,7 @@ def getMovieInfo(cursor, movieIdx):
     movieReleaseDate = ''
     
     if movieInfo is None:
-        response = requests.get('http://m.cgv.co.kr/WebApp/MovieV4/movieDetail.aspx?MovieIdx=%d'%movieIdx)
+        response = requests.get('http://m.cgv.co.kr/WebApp/MovieV4/movieDetail.aspx?MovieIdx=%d'%movieIdx, timeout=10)
 
         movieTitleRaw = re.search(u'<strong class="tit">(.+)</strong>', response.text)
         if movieTitleRaw:

@@ -24,7 +24,7 @@ def getImaxTicketList(theaterCd, needTuple=False):
     imaxTicketList = []
     
     for playYMD in [moment.now().add(days=x).strftime('%Y%m%d') for x in range(0, 30)]:
-        response = requests.post('http://m.cgv.co.kr/Schedule/cont/ajaxMovieSchedule.aspx', {'theaterCd':theaterCd, 'playYMD':playYMD})
+        response = requests.post('http://m.cgv.co.kr/Schedule/cont/ajaxMovieSchedule.aspx', data={'theaterCd':theaterCd, 'playYMD':playYMD}, timeout=10)
         timeList = BeautifulSoup(response.text).find_all("ul", "timelist")
         
         for time in timeList:

@@ -62,7 +62,7 @@ def main():
                     
                     timeDiff = currentTime - ticketInsertTime
                     
-                    if timeDiff.seconds < 3600:
+                    if 600 < timeDiff.seconds < 3600:
                         cursor.execute('INSERT INTO history VALUES (?,?,?,?,?,?)', (ticketRaw[0], ticketRaw[1], ticketRaw[2], ticketRaw[3], currentTimeStr, ticketRaw[5]))
                         cursor.execute('DELETE FROM ticket WHERE theaterCd=? AND movieIdx=? AND ticketDate=? AND ticketTime=?', (ticketRaw[0], ticketRaw[1], ticketRaw[2], ticketRaw[3]))
                 
