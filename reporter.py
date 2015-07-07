@@ -60,7 +60,7 @@ def main():
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     
-    for theaterCd in ['0074', '0013', '0014', '0054']:
+    for theaterCd in ['0074', '0013', '0014', '0054', '0199']:
         cursor.execute('SELECT * FROM theater WHERE theaterCd=?', (theaterCd,))
         apiInfo = cursor.fetchone()
     
