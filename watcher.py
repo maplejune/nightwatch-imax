@@ -56,7 +56,7 @@ if __name__ == "__main__":
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     
-    for theaterCd in ['0074', '0013', '0014', '0054', '0199']:
+    for theaterCd in ['0074', '0013', '0014', '0054', '0199', '0181']:
         currentTime = moment.now().strftime('%Y%m%d%H%M')
         imaxTicketList = getImaxTicketList(theaterCd)
 
