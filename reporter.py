@@ -22,7 +22,7 @@ def getMovieInfo(cursor, movieIdx):
         if movieTitleRaw:
             movieTitle = movieTitleRaw.groups()[0]
 
-        movieReleaseDateRaw = re.search(u'<span class="mi_openday">.*(\d{4}\.\d{2}\.\d{2}) 개봉', response.text)
+        movieReleaseDateRaw = re.search(u'<span class="mi_openday">.*(\d{4}\.\d{2}\.\d{2}) ', response.text)
         if movieReleaseDateRaw:
             movieReleaseDate = movieReleaseDateRaw.groups()[0]
             
