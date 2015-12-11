@@ -7,7 +7,9 @@ import re, os, logging, logging.handlers
 import reporter, remover
 
 TICKET_FORMAT = re.compile(r"popupSchedule\('(.*)','(.*)','(\d\d:\d\d)','\d*','\d*', '\d*', '(\d*)', '(\d*)',")
-
+USER_AGENT = 'Mozilla/5.0 (Linux; Android 4.2.1; en-us; Nexus 5 Build/JOP40D) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.166 Mobile Safari/535.19'
+HEADERS = {'Referer': 'http://m.cgv.co.kr/Schedule/', 'User-Agent': USER_AGENT}
+    
 LOG_FILE = os.path.join(os.path.dirname(__file__), 'WATCH.log')
 DB_FILE = os.path.join(os.path.dirname(__file__), 'TICKET.db')
 DUMMY_ID = "-1"
@@ -24,7 +26,7 @@ def getImaxTicketList(theaterCd, needTuple=False):
     imaxTicketList = []
     
     for playYMD in [moment.now().add(days=x).strftime('%Y%m%d') for x in range(0, 30)]:
-        response = requests.post('http://m.cgv.co.kr/Schedule/cont/ajaxMovieSchedule.aspx', data={'theaterCd':theaterCd, 'playYMD':playYMD}, timeout=10)
+        response = requests.post('http://m.cgv.co.kr/Schedule/cont/ajaxMovieSchedule.aspx', data={'theaterCd':theaterCd, 'playYMD':playYMD}, timeout=10, headers=HEADERS)
         timeList = BeautifulSoup(response.text).find_all("ul", "timelist")
         
         for time in timeList:
