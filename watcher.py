@@ -3,7 +3,7 @@
 
 from bs4 import BeautifulSoup
 import requests, moment, sqlite3
-import re, os, logging, logging.handlers
+import re, os, time, logging, logging.handlers
 import reporter, remover
 
 TICKET_FORMAT = re.compile(r"popupSchedule\('(.*)','(.*)','(\d\d:\d\d)','\d*','\d*', '\d*', '(\d*)', '(\d*)',")
@@ -61,6 +61,8 @@ if __name__ == "__main__":
     for theaterCd in ['0074', '0013', '0014', '0054', '0199', '0181']:
         currentTime = moment.now().strftime('%Y%m%d%H%M')
         imaxTicketList = getImaxTicketList(theaterCd)
+
+        time.sleep(3)
 
         for imaxTicket in imaxTicketList:
             query = (imaxTicket['theaterCd'], imaxTicket['movieIdx'], imaxTicket['ticketDate'], imaxTicket['ticketTime'])
