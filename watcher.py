@@ -8,8 +8,16 @@ import reporter, remover
 
 TICKET_FORMAT = re.compile(r"popupSchedule\('(.*)','(.*)','(\d\d:\d\d)','\d*','\d*', '\d*', '(\d*)', '(\d*)',")
 USER_AGENT = 'Mozilla/5.0 (Linux; Android 4.2.1; en-us; Nexus 5 Build/JOP40D) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.166 Mobile Safari/535.19'
-HEADERS = {'Referer': 'http://m.cgv.co.kr/Schedule/', 'User-Agent': USER_AGENT}
-    
+HEADERS = {'Connection': 'keep-alive',
+            'Pragma': 'no-cache',
+            'Cache-Control': 'no-cache',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Encoding': 'gzip, deflate, sdch',
+            'Accept-Language': 'ko-KR,ko;q=0.8,en-US;q=0.6,en;q=0.4',
+            'Upgrade-Insecure-Requests': 1,
+            'Referer': 'http://m.cgv.co.kr/Schedule/', 
+            'User-Agent': USER_AGENT}
+            
 LOG_FILE = os.path.join(os.path.dirname(__file__), 'WATCH.log')
 DB_FILE = os.path.join(os.path.dirname(__file__), 'TICKET.db')
 DUMMY_ID = "-1"
@@ -22,15 +30,23 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
+def getCookies():
+    response = requests.get('http://m.cgv.co.kr/Schedule/', headers=HEADERS)
+
+    return dict(response.cookies)
+
 def getImaxTicketList(theaterCd, needTuple=False):
+    cookies = getCookies()
     imaxTicketList = []
     
-    for playYMD in [moment.now().add(days=x).strftime('%Y%m%d') for x in range(0, 30)]:
-        response = requests.post('http://m.cgv.co.kr/Schedule/cont/ajaxMovieSchedule.aspx', data={'theaterCd':theaterCd, 'playYMD':playYMD}, timeout=10, headers=HEADERS)
+    for playYMD in [moment.now().add(days=x).strftime('%Y%m%d') for x in range(0, 14)]:
+        response = requests.post('http://m.cgv.co.kr/Schedule/cont/ajaxMovieSchedule.aspx', data={'theaterCd':theaterCd, 'playYMD':playYMD}, timeout=10, headers=HEADERS, cookies=cookies)
         timeList = BeautifulSoup(response.text).find_all("ul", "timelist")
         
-        for time in timeList:
-            for ticket in time.find_all('a'):
+        time.sleep(1)
+        
+        for playTime in timeList:
+            for ticket in playTime.find_all('a'):
                 if str(ticket).find('IMAX') > -1:
                     rawData = TICKET_FORMAT.findall(str(ticket))
                     
@@ -62,8 +78,6 @@ if __name__ == "__main__":
         currentTime = moment.now().strftime('%Y%m%d%H%M')
         imaxTicketList = getImaxTicketList(theaterCd)
 
-        time.sleep(3)
-
         for imaxTicket in imaxTicketList:
             query = (imaxTicket['theaterCd'], imaxTicket['movieIdx'], imaxTicket['ticketDate'], imaxTicket['ticketTime'])
             
@@ -93,7 +107,4 @@ if __name__ == "__main__":
         remover.main()
     except Exception as error:
         logger.error(error)
-        
-        
-
         
