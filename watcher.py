@@ -39,8 +39,8 @@ def getImaxTicketList(theaterCd, needTuple=False):
     cookies = getCookies()
     imaxTicketList = []
     
-    for playYMD in [moment.now().add(days=x).strftime('%Y%m%d') for x in range(0, 14)]:
-        response = requests.post('http://m.cgv.co.kr/Schedule/cont/ajaxMovieSchedule.aspx', data={'theaterCd':theaterCd, 'playYMD':playYMD}, timeout=10, headers=HEADERS, cookies=cookies)
+    for playYMD in [moment.now().add(days=x).strftime('%Y%m%d') for x in range(0, 30)]:
+        response = requests.post('http://m.cgv.co.kr/Schedule/cont/ajaxMovieSchedule.aspx', data={'theaterCd':theaterCd, 'playYMD':playYMD, 'src':''}, timeout=5, headers=HEADERS, cookies=cookies)
         timeList = BeautifulSoup(response.text).find_all("ul", "timelist")
         
         time.sleep(1)
