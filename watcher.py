@@ -6,7 +6,7 @@ import requests, moment, sqlite3
 import re, os, time, logging, logging.handlers
 import reporter, remover
 
-TICKET_FORMAT = re.compile(r"popupSchedule\('(.*)','(.*)','(\d\d:\d\d)','\d*','\d*', '\d*', '(\d*)', '(\d*)',")
+TICKET_FORMAT = re.compile(r"popupSchedule\('(.*)','(.*)','(\d\d:\d\d)','\d*','\d*', '(\d*)', '\d*', '(\d*)',")
 USER_AGENT = 'Mozilla/5.0 (Linux; Android 4.2.1; en-us; Nexus 5 Build/JOP40D) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.166 Mobile Safari/535.19'
 HEADERS = {'Connection': 'keep-alive',
             'Pragma': 'no-cache',
@@ -15,9 +15,9 @@ HEADERS = {'Connection': 'keep-alive',
             'Accept-Encoding': 'gzip, deflate, sdch',
             'Accept-Language': 'ko-KR,ko;q=0.8,en-US;q=0.6,en;q=0.4',
             'Upgrade-Insecure-Requests': 1,
-            'Referer': 'http://m.cgv.co.kr/Schedule/', 
+            'Referer': 'http://m.cgv.co.kr/Schedule/',
             'User-Agent': USER_AGENT}
-            
+
 LOG_FILE = os.path.join(os.path.dirname(__file__), 'WATCH.log')
 DB_FILE = os.path.join(os.path.dirname(__file__), 'TICKET.db')
 DUMMY_ID = "-1"
@@ -38,28 +38,28 @@ def getCookies():
 def getImaxTicketList(theaterCd, needTuple=False):
     cookies = getCookies()
     imaxTicketList = []
-    
+
     for playYMD in [moment.now().add(days=x).strftime('%Y%m%d') for x in range(0, 30)]:
         response = requests.post('http://m.cgv.co.kr/Schedule/cont/ajaxMovieSchedule.aspx', data={'theaterCd':theaterCd, 'playYMD':playYMD, 'src':''}, timeout=5, headers=HEADERS, cookies=cookies)
         timeList = BeautifulSoup(response.text).find_all("ul", "timelist")
-        
+
         time.sleep(1)
-        
+
         for playTime in timeList:
             for ticket in playTime.find_all('a'):
-                if str(ticket).find('IMAX') > -1:
+                if str(ticket).find('\xEC\x95\x84\xEC\x9D\xB4\xEB\xA7\xA5\xEC\x8A\xA4') > -1:
                     rawData = TICKET_FORMAT.findall(str(ticket))
-                    
+
                     if len(rawData) == 1 and len(rawData[0]) == 5:
                         ticketData = rawData[0]
-                        
+
                         movieTitle = ticketData[0]
                         ticketType = ticketData[1]
                         ticketTime = ticketData[2]
                         movieIdx = ticketData[3]
                         ticketDate = ticketData[4]
-                        
-                        if movieTitle.find('IMAX') > -1 and ticketType.find('IMAX') > -1:
+
+                        if ticketType.find('IMAX') > -1:
                             if needTuple:
                                 imaxTicketList.append((theaterCd, int(movieIdx), unicode(ticketDate), unicode(ticketTime)))
                             else:
@@ -73,14 +73,14 @@ def isValidTicket(ticket):
 if __name__ == "__main__":
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
-    
+
     for theaterCd in ['0074', '0013', '0014', '0054', '0199', '0181']:
         currentTime = moment.now().strftime('%Y%m%d%H%M')
         imaxTicketList = getImaxTicketList(theaterCd)
 
         for imaxTicket in imaxTicketList:
             query = (imaxTicket['theaterCd'], imaxTicket['movieIdx'], imaxTicket['ticketDate'], imaxTicket['ticketTime'])
-            
+
             if not isValidTicket(imaxTicket):
                 logger.debug('Wrong ticket : ' + str(query))
                 continue
@@ -101,10 +101,10 @@ if __name__ == "__main__":
 
     conn.commit()
     conn.close()
-    
+
     try:
         reporter.main()
         remover.main()
     except Exception as error:
         logger.error(error)
-        
+
