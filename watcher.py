@@ -41,29 +41,30 @@ def getImaxTicketList(theaterCd, needTuple=False):
 
     for playYMD in [moment.now().add(days=x).strftime('%Y%m%d') for x in range(0, 30)]:
         response = requests.post('http://m.cgv.co.kr/Schedule/cont/ajaxMovieSchedule.aspx', data={'theaterCd':theaterCd, 'playYMD':playYMD, 'src':''}, timeout=5, headers=HEADERS, cookies=cookies)
-        timeList = BeautifulSoup(response.text).find_all("ul", "timelist")
+        timeList = BeautifulSoup(response.text).find_all("div", "time borderTopNone")
 
         time.sleep(1)
 
         for playTime in timeList:
-            for ticket in playTime.find_all('a'):
-                if str(ticket).find('\xEC\x95\x84\xEC\x9D\xB4\xEB\xA7\xA5\xEC\x8A\xA4') > -1:
+            movieType = str(playTime.find('span', 'lo_h'))
+            
+            if movieType.find('IMAX') > -1:
+                for ticket in playTime.find_all('a'):
                     rawData = TICKET_FORMAT.findall(str(ticket))
-
+    
                     if len(rawData) == 1 and len(rawData[0]) == 5:
                         ticketData = rawData[0]
-
+    
                         movieTitle = ticketData[0]
                         ticketType = ticketData[1]
                         ticketTime = ticketData[2]
                         movieIdx = ticketData[3]
                         ticketDate = ticketData[4]
-
-                        if ticketType.find('IMAX') > -1:
-                            if needTuple:
-                                imaxTicketList.append((theaterCd, int(movieIdx), unicode(ticketDate), unicode(ticketTime)))
-                            else:
-                                imaxTicketList.append({'theaterCd':theaterCd, 'movieIdx':movieIdx, 'movieTitle':movieTitle, 'ticketDate': ticketDate, 'ticketTime': ticketTime})
+    
+                        if needTuple:
+                            imaxTicketList.append((theaterCd, int(movieIdx), unicode(ticketDate), unicode(ticketTime)))
+                        else:
+                            imaxTicketList.append({'theaterCd':theaterCd, 'movieIdx':movieIdx, 'movieTitle':movieTitle, 'ticketDate': ticketDate, 'ticketTime': ticketTime})
 
     return imaxTicketList
 
