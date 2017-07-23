@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
 import re
-import requests
+
+import boto3
 import moment
+import requests
 from bs4 import BeautifulSoup
+
+TABLE = boto3.resource('dynamodb').Table('nightwatch-imax-raw-data')
+MOVIE_CODE_PATTERN = re.compile("popupSchedule\('.*','.*','(\d\d:\d\d)','\d*','\d*', '(\d*)', '\d*', '\d*',")
 
 
 def is_cgv_online():
@@ -15,7 +20,7 @@ def is_cgv_online():
 
 
 def get_date_list(theater_code):
-    today = moment.now().locale('Asia/Seoul').strftime('%Y%m%d')
+    today = moment.utcnow().locale('Asia/Seoul').strftime('%Y%m%d')
 
     date_list_url = 'http://m.cgv.co.kr/Schedule/?tc={}&t=T&ymd={}&src='.format(theater_code, today)
     date_list_response = requests.get(date_list_url).text
@@ -42,20 +47,50 @@ def get_schedule_list(theater_code, date):
     return schedule_list
 
 
-def aws_lambda_handler(event, context):
+def get_schedule_info(schedule_str):
+    return MOVIE_CODE_PATTERN.search(schedule_str)
+
+
+def save(theater_code, date, schedule_list):
+    created_at = moment.utcnow().epoch()
+
+    with TABLE.batch_writer(overwrite_by_pkeys=['id', 'created_at']) as batch:
+        for schedule in schedule_list:
+            raw_data = str(schedule)
+
+            schedule_info = get_schedule_info(raw_data)
+
+            if schedule_info is None:
+                print(raw_data)
+                return
+
+            time = schedule_info.group(1).replace(':', '')
+            movie_code = schedule_info.group(2)
+
+            raw_data_id = '{}.{}.{}.{}'.format(theater_code, date, movie_code, time)
+
+            batch.put_item(Item={'id': raw_data_id,
+                                 'created_at': created_at,
+                                 'raw_data': raw_data,
+                                 'theater_code': theater_code,
+                                 'date': date,
+                                 'movie_code': movie_code,
+                                 'time': time})
+
+            print(raw_data_id)
+
+
+def watcher_lambda_handler(event, context):
     if not is_cgv_online():
+        print('Cannot connect CGV server...')
         return
 
-    theater_codes = ['0074']
+    theater_code = '0074'
 
-    for theater_code in theater_codes:
-        date_list = get_date_list(theater_code)
+    for date in get_date_list(theater_code):
+        schedule_list = get_schedule_list(theater_code, date)
 
-        for date in date_list:
-            schedule_list = get_schedule_list(theater_code, date)
-
-            print('{}.{}'.format(theater_code, date))
-            print(schedule_list)
+        save(theater_code, date, schedule_list)
 
 
-aws_lambda_handler('', '')
+watcher_lambda_handler('', '')
