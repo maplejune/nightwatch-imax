@@ -62,7 +62,7 @@ def save(theater_code, date, schedule_list):
 
             if schedule_info is None:
                 logger.warning('Missing schedule_info : %s', raw_data)
-                return
+                continue
 
             time = schedule_info.group(1).replace(':', '')
             movie_code = schedule_info.group(2)
