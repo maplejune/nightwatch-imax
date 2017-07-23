@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import logging
 import re
 
 import boto3
@@ -6,7 +7,6 @@ import moment
 import requests
 from bs4 import BeautifulSoup
 
-TABLE = boto3.resource('dynamodb').Table('nightwatch-imax-raw-data')
 MOVIE_CODE_PATTERN = re.compile("popupSchedule\('.*','.*','(\d\d:\d\d)','\d*','\d*', '(\d*)', '\d*', '\d*',")
 
 
@@ -15,7 +15,7 @@ def is_cgv_online():
         health_check = requests.get('http://m.cgv.co.kr')
         return health_check.status_code == 200
     except Exception as e:
-        print(e)
+        logger.error(e)
         return False
 
 
@@ -54,14 +54,14 @@ def get_schedule_info(schedule_str):
 def save(theater_code, date, schedule_list):
     created_at = moment.utcnow().epoch()
 
-    with TABLE.batch_writer(overwrite_by_pkeys=['id', 'created_at']) as batch:
+    with table.batch_writer(overwrite_by_pkeys=['id', 'created_at']) as batch:
         for schedule in schedule_list:
             raw_data = str(schedule)
 
             schedule_info = get_schedule_info(raw_data)
 
             if schedule_info is None:
-                print(raw_data)
+                logger.warning('Missing schedule_info : %s', raw_data)
                 return
 
             time = schedule_info.group(1).replace(':', '')
@@ -77,20 +77,22 @@ def save(theater_code, date, schedule_list):
                                  'movie_code': movie_code,
                                  'time': time})
 
-            print(raw_data_id)
+            logger.info('Saved : %s', raw_data_id)
 
 
 def watcher_lambda_handler(event, context):
     if not is_cgv_online():
-        print('Cannot connect CGV server...')
-        return
+        raise Exception('Cannot connect CGV server!')
 
-    theater_code = '0074'
+    theater_code = event['theater_code']
 
     for date in get_date_list(theater_code):
         schedule_list = get_schedule_list(theater_code, date)
 
         save(theater_code, date, schedule_list)
 
+    return theater_code
 
-watcher_lambda_handler('', '')
+
+logger = logging.getLogger()
+table = boto3.resource('dynamodb').Table('nightwatch-imax-raw-data')
