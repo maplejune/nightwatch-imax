@@ -3,7 +3,7 @@ import logging
 import re
 
 import boto3
-import moment
+import arrow
 import requests
 from bs4 import BeautifulSoup
 
@@ -20,7 +20,7 @@ def is_cgv_online():
 
 
 def get_date_list(theater_code):
-    today = moment.utcnow().locale('Asia/Seoul').strftime('%Y%m%d')
+    today = arrow.now('Asia/Seoul').format('YYYYMMDD')
 
     date_list_url = 'http://m.cgv.co.kr/Schedule/?tc={}&t=T&ymd={}&src='.format(theater_code, today)
     date_list_response = requests.get(date_list_url).text
@@ -52,7 +52,7 @@ def get_schedule_info(schedule_str):
 
 
 def save(theater_code, date, schedule_list):
-    created_at = moment.utcnow().epoch()
+    created_at = arrow.utcnow().timestamp
 
     with table.batch_writer(overwrite_by_pkeys=['id', 'created_at']) as batch:
         for schedule in schedule_list:
