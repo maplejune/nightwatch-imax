@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 import re
+import os
 
 import boto3
 import arrow
@@ -84,7 +85,7 @@ def watcher_lambda_handler(event, context):
     if not is_cgv_online():
         raise Exception('Cannot connect CGV server!')
 
-    theater_code = event['theater_code']
+    theater_code = os.environ['theater_code']
 
     for date in get_date_list(theater_code):
         schedule_list = get_schedule_list(theater_code, date)
