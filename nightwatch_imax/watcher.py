@@ -81,7 +81,7 @@ def save(schedule_list):
     table = boto3.resource('dynamodb').Table('nightwatch-imax-raw-data')
 
     created_at = arrow.utcnow().timestamp
-    expire_at = arrow.utcnow().shift(days=+1).timestamp
+    expire_at = arrow.utcnow().shift(minutes=+30).timestamp
 
     with table.batch_writer(overwrite_by_pkeys=['id', 'created_at']) as batch:
         for schedule_info in schedule_list:
