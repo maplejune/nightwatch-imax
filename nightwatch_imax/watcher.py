@@ -78,13 +78,16 @@ def get_schedule_list(theater_code):
 
 
 def save(schedule_list):
-    created_at = arrow.utcnow().timestamp
     table = boto3.resource('dynamodb').Table('nightwatch-imax-raw-data')
+
+    created_at = arrow.utcnow().timestamp
+    expire_at = arrow.utcnow().shift(days=+1).timestamp
 
     with table.batch_writer(overwrite_by_pkeys=['id', 'created_at']) as batch:
         for schedule_info in schedule_list:
             batch.put_item(Item={'id': schedule_info.id,
                                  'created_at': created_at,
+                                 'expire_at': expire_at,
                                  'raw_data': schedule_info.raw_data,
                                  'theater_code': schedule_info.theater_code,
                                  'date': schedule_info.date,
