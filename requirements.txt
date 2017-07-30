@@ -1,4 +1,4 @@
 requests
-moment
+arrow
 bs4
 boto3
