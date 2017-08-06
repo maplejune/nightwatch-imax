@@ -74,5 +74,3 @@ def watcher_lambda_handler(event, context):
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-
-save_schedule_list(get_schedule_list('0013'))
