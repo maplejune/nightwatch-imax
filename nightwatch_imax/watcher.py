@@ -69,7 +69,7 @@ def watcher_lambda_handler(event, context):
 
     save_schedule_list(schedule_list)
 
-    return theater_code
+    return len(schedule_list)
 
 
 logger = logging.getLogger()
