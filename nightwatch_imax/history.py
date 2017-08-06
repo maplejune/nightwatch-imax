@@ -12,13 +12,12 @@ from nightwatch_imax.schedule import DecimalEncoder
 class History:
     id = ''
 
-    def __init__(self, history_id, message_data, schedule_data, expire_at, created_at, message_id=None):
+    def __init__(self, history_id, raw_data, message_result, expire_at=None, created_at=None):
         self.id = history_id
-        self.schedule_data = str(schedule_data)
-        self.message_data = str(message_data)
+        self.raw_data = str(raw_data)
+        self.message_result = str(message_result)
         self.expire_at = expire_at
         self.created_at = created_at
-        self.message_id = message_id
 
 
 def parse_history(json_str):
@@ -26,8 +25,8 @@ def parse_history(json_str):
 
     return History(
         history_id=data['id'],
-        schedule_data=data['schedule_data'],
-        message_data=data['message_data'],
+        raw_data=data['raw_data'],
+        message_result=data['message_result'],
         expire_at=data['expire_at'],
         created_at=data['created_at']
     )
@@ -60,6 +59,22 @@ def get_history_list(weeks=8):
             history_list.append(parse_history(data))
 
     return [history.id for history in history_list]
+
+
+def save_history_list(history_list, expire_at):
+    table = boto3.resource('dynamodb').Table('nightwatch-imax-history')
+
+    created_at = arrow.utcnow().timestamp
+
+    with table.batch_writer() as batch:
+        for history in history_list:
+            batch.put_item(Item={'id': history.id,
+                                 'raw_data': history.raw_data,
+                                 'message_result': history.message_result,
+                                 'created_at': created_at,
+                                 'expire_at': expire_at})
+
+            logger.debug('Saved : %s', history.id)
 
 
 logger = logging.getLogger()
