@@ -2,3 +2,4 @@ requests
 arrow
 bs4
 boto3
+twython

@@ -23,6 +23,7 @@ class DecimalEncoder(json.JSONEncoder):
 
 class ScheduleInfo:
     id = ''
+    raw_data = ''
 
     def __init__(self, schedule_id, raw_data, theater_code, date, movie_code, time, created_at=None):
         self.id = schedule_id
@@ -38,6 +39,9 @@ class ScheduleInfo:
 
     def is_valid(self):
         return self.id is not ''
+
+    def is_imax_schedule(self):
+        return u'아이맥스' in self.raw_data or 'imax' in self.raw_data.lower()
 
 
 def create_schedule_info(theater_code, date, raw_data):
@@ -57,14 +61,17 @@ def create_schedule_info(theater_code, date, raw_data):
     return ScheduleInfo(schedule_id, raw_data, theater_code, date, movie_code, time)
 
 
-def parse_schedule_info(db_data):
+def parse_schedule_info(json_str):
+    data = json.loads(json_str)
+
     return ScheduleInfo(
-        db_data.id,
-        db_data.theater_code,
-        db_data.date,
-        db_data.movie_code,
-        db_data.time,
-        db_data.created_at
+        schedule_id=data['id'],
+        raw_data=data['raw_data'],
+        theater_code=data['theater_code'],
+        movie_code=data['movie_code'],
+        date=data['date'],
+        time=data['time'],
+        created_at=data['created_at']
     )
 
 
@@ -88,12 +95,12 @@ def save_schedule_list(schedule_list):
             logger.debug('Saved : %s', schedule_info.id)
 
 
-def get_latest_schedule_list():
+def get_latest_schedule_list(minute):
     table = boto3.resource('dynamodb').Table('nightwatch-imax-raw-data')
 
     raw_data = []
 
-    created_from = arrow.utcnow().shift(minutes=-5).timestamp
+    created_from = arrow.utcnow().shift(minutes=-minute).timestamp
     filter_expression = Key('created_at').gte(created_from)
 
     response = table.scan(
@@ -101,7 +108,7 @@ def get_latest_schedule_list():
     )
 
     for item in response['Items']:
-        data = json.dumps(item, indent=4, cls=DecimalEncoder)
+        data = json.dumps(item, cls=DecimalEncoder)
         raw_data.append(parse_schedule_info(data))
 
     while 'LastEvaluatedKey' in response:
@@ -111,7 +118,7 @@ def get_latest_schedule_list():
         )
 
         for item in response['Items']:
-            data = json.dumps(item, indent=4, cls=DecimalEncoder)
+            data = json.dumps(item, cls=DecimalEncoder)
             raw_data.append(parse_schedule_info(data))
 
     return raw_data

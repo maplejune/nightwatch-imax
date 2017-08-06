@@ -38,7 +38,7 @@ def get_date_list(theater_code):
 
 
 def get_schedule_list(theater_code):
-    result = []
+    all_schedule_list = []
 
     for date in get_date_list(theater_code):
         logger.info('Target : %s %s', theater_code, date)
@@ -51,11 +51,12 @@ def get_schedule_list(theater_code):
         for time_list in soup.find_all('ul', 'timelist'):
             schedule_list.extend(time_list.find_all('li'))
 
-        result.extend([create_schedule_info(theater_code, date, str(raw_data)) for raw_data in schedule_list])
+        all_schedule_list.extend(
+            [create_schedule_info(theater_code, date, str(raw_data)) for raw_data in schedule_list])
 
     return list(filter(
-        lambda schedule_info: schedule_info.is_valid() and is_imax_movie(schedule_info.movie_code),
-        result
+        lambda schedule: schedule.is_valid() and schedule.is_imax_schedule() and is_imax_movie(schedule.movie_code),
+        all_schedule_list
     ))
 
 
@@ -73,3 +74,5 @@ def watcher_lambda_handler(event, context):
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+
+save_schedule_list(get_schedule_list('0013'))
