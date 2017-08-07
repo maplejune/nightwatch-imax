@@ -75,7 +75,7 @@ def report_initial_detection(schedule_list, detection_list):
         is_success, response = report(theater_code, message)
 
         if not is_success:
-            logger.error('Report failed - message[%s]', message)
+            logger.error('Report failed - theater_code[%s] message[%s]', theater_code, message)
             continue
 
         logger.info('Report success - message[%s] response[%s]', message, response)
@@ -114,7 +114,7 @@ def report_solid_detection(schedule_list, detection_list):
         is_success, response = report(theater_code, message)
 
         if not is_success:
-            logger.error('Report failed - message[%s]', message)
+            logger.error('Report failed - theater_code[%s] message[%s]', theater_code, message)
             continue
 
         logger.info('Report success - message[%s] response[%s]', message, response)
