@@ -126,7 +126,7 @@ def report_solid_detection(schedule_list, detection_list):
 
 def report(theater_code, message):
     try:
-        token = os.environ[theater_code].split(',')
+        token = os.environ['T' + theater_code].split(',')
         twitter = Twython(app_key=token[0], app_secret=token[1], oauth_token=token[2], oauth_token_secret=token[3])
         return True, twitter.update_status(status=message)
     except Exception as e:
