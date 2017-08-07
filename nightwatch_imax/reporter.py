@@ -61,7 +61,7 @@ def report_initial_detection(schedule_list, detection_list):
         message_id = '{}.{}'.format(schedule.theater_code, schedule.movie_code)
         schedule_by_movie[message_id].append(schedule)
 
-    for message_id, schedule_by_date in schedule_by_movie.items():
+    for message_id, schedule_by_date in sorted(schedule_by_movie.items()):
         theater_code, movie_code = message_id.split('.')
 
         movie_info = get_movie_info(movie_code)
@@ -98,7 +98,7 @@ def report_solid_detection(schedule_list, detection_list):
         message_id = '{}.{}.{}'.format(schedule.theater_code, schedule.movie_code, schedule.date)
         schedule_by_date[message_id].append(schedule)
 
-    for message_id, schedule_by_time in schedule_by_date.items():
+    for message_id, schedule_by_time in sorted(schedule_by_date.items()):
         theater_code, movie_code, date = message_id.split('.')
 
         movie_info = get_movie_info(movie_code)
