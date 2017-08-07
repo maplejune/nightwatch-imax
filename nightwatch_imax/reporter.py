@@ -75,7 +75,7 @@ def report_initial_detection(schedule_list, detection_list):
         is_success, response = report(theater_code, message)
 
         if not is_success:
-            logger.error('Report failed - message[%s] response[%s]', message, response)
+            logger.error('Report failed - message[%s]', message)
             continue
 
         logger.info('Report success - message[%s] response[%s]', message, response)
@@ -114,7 +114,7 @@ def report_solid_detection(schedule_list, detection_list):
         is_success, response = report(theater_code, message)
 
         if not is_success:
-            logger.error('Report failed - message[%s] response[%s]', message, response)
+            logger.error('Report failed - message[%s]', message)
             continue
 
         logger.info('Report success - message[%s] response[%s]', message, response)
@@ -130,8 +130,8 @@ def report(theater_code, message):
         twitter = Twython(app_key=token[0], app_secret=token[1], oauth_token=token[2], oauth_token_secret=token[3])
         return True, twitter.update_status(status=message)
     except Exception as e:
-        logger.error(e)
-        return False, str(e)
+        logging.exception('Something wrong with reporting...')
+        return False, e
 
 
 def reporter_lambda_handler(event, context):
