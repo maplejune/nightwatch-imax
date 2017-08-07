@@ -30,7 +30,7 @@ def get_unique_raw_data(schedule_list):
     return unique_list
 
 
-def get_detection_list(schedule_list, condition):
+def get_detection_list(schedule_list, history_list, condition):
     schedule_counter = Counter([schedule.id for schedule in schedule_list])
 
     for schedule_id, count in schedule_counter.copy().items():
@@ -43,7 +43,7 @@ def get_detection_list(schedule_list, condition):
         return []
 
     return list(filter(
-        lambda candidate: candidate not in get_history_list(),
+        lambda candidate: candidate not in history_list,
         candidate_list
     ))
 
@@ -54,34 +54,34 @@ def report_initial_detection(schedule_list, detection_list):
         schedule_list
     ))
 
-    message_data = defaultdict(set)
-    message_result = dict()
+    history_list = list()
+    schedule_by_movie = defaultdict(list)
 
     for schedule in target_list:
         message_id = '{}.{}'.format(schedule.theater_code, schedule.movie_code)
-        message_data[message_id].add(schedule.date)
+        schedule_by_movie[message_id].append(schedule)
 
-    for data_id, data in message_data.items():
-        theater_code, movie_code = data_id.split('.')
+    for message_id, schedule_by_date in schedule_by_movie.items():
+        theater_code, movie_code = message_id.split('.')
 
         movie_info = get_movie_info(movie_code)
-        date_list = sorted((list(data)))
+        date_list = sorted(set([_schedule.date for _schedule in schedule_by_date]))
 
-        message = '<{}> [{}] 예매가 열린 것 같아요. 10분간 더 살펴보고 확정적이면 다시 알려드릴게요!'.format(
+        message = '<{}> {} 예매가 열린 것 같아요. 10분간 더 살펴보고 확정적이면 다시 알려드릴게요!'.format(
             movie_info.name,
             ', '.join([arrow.get(date, 'YYYYMMDD').format('M월 D일') for date in date_list])
         )
 
-        result = report(theater_code, message)
-        message_result.setdefault(data_id, result)
+        is_success, response = report(theater_code, message)
 
-    history_list = []
+        if not is_success:
+            logger.error('Report failed - message[%s] response[%s]', message, response)
+            continue
+
+        logger.info('Report success - message[%s] response[%s]', message, response)
+        history_list.extend([History(_schedule.id, _schedule.raw_data, response) for _schedule in schedule_by_date])
+
     expire_at = arrow.utcnow().shift(minutes=+10).timestamp
-
-    for schedule in target_list:
-        message_id = '{}.{}'.format(schedule.theater_code, schedule.movie_code)
-        history_list.append(History(schedule.id, schedule.raw_data, message_result[message_id]))
-
     save_history_list(history_list, expire_at)
 
 
@@ -91,19 +91,19 @@ def report_solid_detection(schedule_list, detection_list):
         schedule_list
     ))
 
-    message_data = defaultdict(set)
-    message_result = dict()
+    history_list = list()
+    schedule_by_date = defaultdict(list)
 
     for schedule in target_list:
         message_id = '{}.{}.{}'.format(schedule.theater_code, schedule.movie_code, schedule.date)
-        message_data[message_id].add(schedule.time)
+        schedule_by_date[message_id].append(schedule)
 
-    for data_id, data in message_data.items():
-        theater_code, movie_code, date = data_id.split('.')
+    for message_id, schedule_by_time in schedule_by_date.items():
+        theater_code, movie_code, date = message_id.split('.')
 
         movie_info = get_movie_info(movie_code)
         date_str = arrow.get(date, 'YYYYMMDD').format('M월 D일')
-        time_list = sorted((list(data)))
+        time_list = sorted(set([_schedule.time for _schedule in schedule_by_time]))
 
         message = '<{}> {} 예매가 열렸습니다. {} 예매가능!'.format(
             movie_info.name,
@@ -111,16 +111,16 @@ def report_solid_detection(schedule_list, detection_list):
             ' '.join([time[:2] + ':' + time[2:] for time in time_list])
         )
 
-        result = report(theater_code, message)
-        message_result.setdefault(data_id, result)
+        is_success, response = report(theater_code, message)
 
-    history_list = []
-    expire_at = arrow.utcnow().shift(minutes=+10).timestamp
+        if not is_success:
+            logger.error('Report failed - message[%s] response[%s]', message, response)
+            continue
 
-    for schedule in target_list:
-        message_id = '{}.{}.{}'.format(schedule.theater_code, schedule.movie_code, schedule.date)
-        history_list.append(History(schedule.id, schedule.raw_data, message_result[message_id]))
+        logger.info('Report success - message[%s] response[%s]', message, response)
+        history_list.extend([History(_schedule.id, _schedule.raw_data, response) for _schedule in schedule_by_time])
 
+    expire_at = arrow.utcnow().shift(weeks=+8).timestamp
     save_history_list(history_list, expire_at)
 
 
@@ -128,24 +128,26 @@ def report(theater_code, message):
     try:
         token = os.environ[theater_code].split(',')
         twitter = Twython(app_key=token[0], app_secret=token[1], oauth_token=token[2], oauth_token_secret=token[3])
-        return twitter.update_status(status=message)
+        return True, twitter.update_status(status=message)
     except Exception as e:
         logger.error(e)
-        return str(e)
+        return False, str(e)
+
+
+def reporter_lambda_handler(event, context):
+    latest_raw_data = get_latest_raw_data()
+    recent_history = get_history_list()
+
+    initial_detection_list = get_detection_list(latest_raw_data, recent_history, lambda count: count < 10)
+    solid_detection_list = get_detection_list(latest_raw_data, recent_history, lambda count: count > 10)
+
+    unique_raw_data = get_unique_raw_data(latest_raw_data)
+
+    report_initial_detection(unique_raw_data, initial_detection_list)
+    report_solid_detection(unique_raw_data, solid_detection_list)
+
+    return 'initial_detection:{} solid_detection:{}'.format(len(initial_detection_list), len(solid_detection_list))
 
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-
-a = get_latest_raw_data()
-
-initial_detection_list = get_detection_list(a, lambda count: count < 10)
-solid_detection_list = get_detection_list(a, lambda count: count > 10)
-
-print(initial_detection_list)
-print(solid_detection_list)
-
-b = get_unique_raw_data(a)
-
-report_initial_detection(b, initial_detection_list)
-report_solid_detection(b, solid_detection_list)
