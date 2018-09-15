@@ -12,14 +12,14 @@ class ScheduleInfo:
     id = ''
     raw_data = ''
 
-    def __init__(self, id, raw_data, theater_code, date, movie_code, time, created_at):
+    def __init__(self, id, raw_data, theater_code, date, movie_code, time, collected_at):
         self.id = id
         self.raw_data = str(raw_data)
         self.theater_code = theater_code
         self.date = date
         self.movie_code = movie_code
         self.time = time
-        self.created_at = created_at
+        self.collected_at = collected_at
 
     def __repr__(self) -> str:
         return self.id
@@ -37,7 +37,8 @@ class ScheduleInfo:
             'theater_code': self.theater_code,
             'date': self.date,
             'time': self.time,
-            'created_at': self.created_at
+            'collected_at': self.collected_at,
+            'reported': False
         }
 
 
@@ -68,5 +69,5 @@ def parse_schedule_info(json_str):
         movie_code=data['movie_code'],
         date=data['date'],
         time=data['time'],
-        created_at=data['created_at']
+        collected_at=data['collected_at']
     )
