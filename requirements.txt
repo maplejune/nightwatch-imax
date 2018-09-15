@@ -1,5 +1,5 @@
 requests
-arrow
+maya
 bs4
-boto3
+pymongo
 twython

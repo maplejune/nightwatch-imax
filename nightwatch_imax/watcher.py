@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 import logging
-import os
 import re
+import sys
 
-import arrow
+import maya
 import requests
+from pymongo import MongoClient
 from bs4 import BeautifulSoup
 
-from nightwatch_imax.movie import is_imax_movie
-from nightwatch_imax.schedule import create_schedule_info, save_schedule_list
+from nightwatch_imax.schedule import create_schedule_info
 
 
 def is_cgv_online():
@@ -16,12 +16,12 @@ def is_cgv_online():
         health_check = requests.get('http://m.cgv.co.kr')
         return health_check.status_code == 200
     except Exception as e:
-        logger.error(e)
+        logging.error(e)
         return False
 
 
 def get_date_list(theater_code):
-    today = arrow.now('Asia/Seoul').format('YYYYMMDD')
+    today = maya.now().datetime(to_timezone='Asia/Seoul').strftime('%Y%m%d')
 
     date_list_url = 'http://m.cgv.co.kr/Schedule/?tc={}&t=T&ymd={}&src='.format(theater_code, today)
     date_list_response = requests.get(date_list_url).text
@@ -32,45 +32,45 @@ def get_date_list(theater_code):
     date_pattern = re.compile('getMovieSchedule\(\'(\d{8})\',')
     dates = date_pattern.findall(date_list)
 
-    logger.info('Targets : %s %s', theater_code, dates)
+    logging.info('Targets : %s %s', theater_code, dates)
 
     return dates
 
 
 def get_schedule_list(theater_code):
-    all_schedule_list = []
+    schedule_list = []
 
     for date in get_date_list(theater_code):
-        logger.info('Target : %s %s', theater_code, date)
+        logging.info('Target : %s %s', theater_code, date)
 
         schedule_url = 'http://m.cgv.co.kr/Schedule/cont/ajaxMovieSchedule.aspx'
         schedule_response = requests.post(schedule_url, data={'theaterCd': theater_code, 'playYMD': date}).text
         soup = BeautifulSoup(schedule_response, 'html.parser')
 
-        schedule_list = []
         for time_list in soup.find_all('ul', 'timelist'):
-            schedule_list.extend(time_list.find_all('li'))
+            schedule_list.extend(
+                [create_schedule_info(theater_code, date, str(schedule)) for schedule in time_list.find_all('li')]
+            )
 
-        all_schedule_list.extend(
-            [create_schedule_info(theater_code, date, str(raw_data)) for raw_data in schedule_list])
-
-    return list(filter(
-        lambda schedule: schedule.is_valid() and schedule.is_imax_schedule() and is_imax_movie(schedule.movie_code),
-        all_schedule_list
-    ))
+    return schedule_list
 
 
-def watcher_lambda_handler(event, context):
+def watch(theater_code):
     if not is_cgv_online():
         raise Exception('Cannot connect CGV server!')
 
-    theater_code = os.environ['theater_code']
-    schedule_list = get_schedule_list(theater_code)
+    db = MongoClient().nightwatch_imax.schedules
 
-    save_schedule_list(schedule_list)
+    for schedule in get_schedule_list(theater_code):
+        if db.find_one({"id": schedule.id}) is None:
+            db.insert_one(schedule.dict())
+            logging.info('new schedule : %s', schedule)
+        else:
+            logging.info('detected schedule : %s', schedule)
 
-    return len(schedule_list)
 
-
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        watch(sys.argv[1:][0])
+    else:
+        print('Use theater code | ex) python watcher.py 0013')
