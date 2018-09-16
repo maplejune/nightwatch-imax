@@ -48,9 +48,10 @@ def get_schedule_list(theater_code):
         soup = BeautifulSoup(schedule_response, 'html.parser')
 
         for time_list in soup.find_all('ul', 'timelist'):
-            schedule_list.extend(
+            schedule_list.extend(list(filter(
+                lambda _schedule: _schedule.is_valid() and _schedule.is_imax_schedule(),
                 [create_schedule_info(theater_code, date, str(schedule)) for schedule in time_list.find_all('li')]
-            )
+            )))
 
     return schedule_list
 
@@ -60,7 +61,7 @@ def watch(theater_code):
         raise Exception('Cannot connect CGV server!')
 
     for schedule in get_schedule_list(theater_code):
-        if schedule.is_valid() and schedule.is_imax_schedule() and schedule_db.find_one({"id": schedule.id}) is None:
+        if schedule_db.find_one({'code': schedule.code}) is None:
             schedule_db.insert_one(schedule.dict())
             logging.info('new schedule : %s', schedule)
         else:

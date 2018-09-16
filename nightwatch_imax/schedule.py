@@ -9,30 +9,31 @@ MOVIE_CODE_PATTERN = re.compile("popupSchedule\('.*','.*','(\d\d:\d\d)','\d*','\
 
 
 class ScheduleInfo:
-    id = ''
+    code = ''
     raw_data = ''
 
-    def __init__(self, id, raw_data, theater_code, date, movie_code, time, collected_at):
-        self.id = id
+    def __init__(self, code, raw_data, theater_code, date, movie_code, time, collected_at, reported=False):
+        self.code = code
         self.raw_data = str(raw_data)
         self.theater_code = theater_code
         self.date = date
         self.movie_code = movie_code
         self.time = time
         self.collected_at = collected_at
+        self.reported = reported
 
     def __repr__(self) -> str:
-        return self.id
+        return self.code
 
     def is_valid(self):
-        return self.id is not ''
+        return self.code is not ''
 
     def is_imax_schedule(self):
         return u'아이맥스' in self.raw_data or 'imax' in self.raw_data.lower()
 
     def dict(self):
         return {
-            'id': self.id,
+            'code': self.code,
             'raw_data': self.raw_data,
             'theater_code': self.theater_code,
             'date': self.date,
@@ -43,7 +44,7 @@ class ScheduleInfo:
 
 
 def create_schedule_info(theater_code, date, raw_data):
-    schedule_id = ''
+    code = ''
     movie_code = ''
     time = ''
 
@@ -54,20 +55,21 @@ def create_schedule_info(theater_code, date, raw_data):
     else:
         time = movie_info.group(1).replace(':', '')
         movie_code = movie_info.group(2)
-        schedule_id = '{}.{}.{}.{}'.format(theater_code, date, movie_code, time)
+        code = '{}.{}.{}.{}'.format(theater_code, date, movie_code, time)
 
-    return ScheduleInfo(schedule_id, raw_data, theater_code, date, movie_code, time, maya.now().epoch)
+    return ScheduleInfo(code, raw_data, theater_code, date, movie_code, time, maya.now().epoch)
 
 
 def parse_schedule_info(json_str):
     data = json.loads(json_str)
 
     return ScheduleInfo(
-        id=data['id'],
+        code=data['code'],
         raw_data=data['raw_data'],
         theater_code=data['theater_code'],
         movie_code=data['movie_code'],
         date=data['date'],
         time=data['time'],
-        collected_at=data['collected_at']
+        collected_at=data['collected_at'],
+        reported=data['reported']
     )
