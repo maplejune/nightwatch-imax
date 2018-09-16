@@ -59,15 +59,15 @@ def watch(theater_code):
     if not is_cgv_online():
         raise Exception('Cannot connect CGV server!')
 
-    db = MongoClient().nightwatch_imax.schedules
-
     for schedule in get_schedule_list(theater_code):
-        if db.find_one({"id": schedule.id}) is None:
-            db.insert_one(schedule.dict())
+        if schedule.is_valid() and schedule.is_imax_schedule() and schedule_db.find_one({"id": schedule.id}) is None:
+            schedule_db.insert_one(schedule.dict())
             logging.info('new schedule : %s', schedule)
         else:
             logging.info('detected schedule : %s', schedule)
 
+
+schedule_db = MongoClient().nightwatch_imax.schedules
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
